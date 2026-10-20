@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل عيادة جديدة — NAQClinixAI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>body { font-family: 'Cairo', sans-serif; }</style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 py-8" style="background: linear-gradient(135deg,#0b1220,#1e3a8a 60%,#0d9488)">
+
+<div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8">
+  <div class="text-center mb-6">
+    <div class="text-5xl mb-2">🦷</div>
+    <h1 class="text-2xl font-extrabold text-blue-900">تسجيل عيادة جديدة</h1>
+    <p class="text-sm text-gray-500 mt-1">انضم إلى NAQClinixAI</p>
+  </div>
+
+  <div class="space-y-3">
+    <div>
+      <label class="text-xs font-bold text-gray-700 block mb-1">👤 اسمك الكامل *</label>
+      <input type="text" id="fullName" placeholder="د. أحمد محمد"
+        class="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-600">
+    </div>
+    <div>
+      <label class="text-xs font-bold text-gray-700 block mb-1">🏥 اسم العيادة *</label>
+      <input type="text" id="clinicName" placeholder="عيادة الأمل لطب الأسنان"
+        class="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-600">
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="text-xs font-bold text-gray-700 block mb-1">📱 الهاتف *</label>
+        <input type="tel" id="phone" placeholder="777xxxxxx"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-600">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-700 block mb-1">📍 العنوان</label>
+        <input type="text" id="address" placeholder="المدينة - الحي"
+          class="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-600">
+      </div>
+    </div>
+    <div>
+      <label class="text-xs font-bold text-gray-700 block mb-1">🔑 اسم المستخدم * (إنجليزي فقط)</label>
+      <input type="text" id="username" placeholder="drahmed" dir="ltr"
+        class="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-600"
+        oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
+    </div>
+    <div>
+      <label class="text-xs font-bold text-gray-700 block mb-1">🔒 كلمة المرور * (6 أحرف على الأقل)</label>
+      <input type="password" id="password" placeholder="••••••••"
+        class="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-600">
+    </div>
+    <div>
+      <label class="text-xs font-bold text-gray-700 block mb-1">🔒 تأكيد كلمة المرور *</label>
+      <input type="password" id="password2" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')doRegister()"
+        class="w-full p-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-600">
+    </div>
+
+    <label class="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
+      <input type="checkbox" id="agree" class="mt-0.5">
+      <span>أوافق على الشروط وسياسة الخصوصية</span>
+    </label>
+
+    <button onclick="doRegister()" id="registerBtn"
+      class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3 rounded-xl font-bold hover:opacity-90 disabled:opacity-50">
+      ✨ إنشاء العيادة (مجاناً)
+    </button>
+
+    <p id="error" class="hidden text-xs text-center text-red-600 font-bold bg-red-50 p-2 rounded-lg"></p>
+    <p id="success" class="hidden text-xs text-center text-emerald-700 font-bold bg-emerald-50 p-2 rounded-lg"></p>
+
+    <div class="text-center pt-3 border-t">
+      <p class="text-sm text-gray-600">لديك حساب؟
+        <a href="Clinical.html" class="text-blue-600 font-bold hover:underline">سجّل دخول</a>
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-5 p-3 bg-blue-50 rounded-xl text-[11px] text-blue-900 leading-relaxed">
+    <p class="font-bold mb-1">🎁 عند التسجيل تحصل على:</p>
+    <p>• خطة مجانية دائمة — حتى 15 مريض</p>
+    <p>• إمكانية إضافة موظفين وأطباء</p>
+    <p>• Dentbook للتواصل مع الأطباء</p>
+    <p>• ترقية في أي وقت</p>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBe5PoeoH0pJ9hC0vTjVPELNZPpmKqCjCU",
+  authDomain: "naqclinixai-dental-clinic.firebaseapp.com",
+  projectId: "naqclinixai-dental-clinic",
+  storageBucket: "naqclinixai-dental-clinic.firebasestorage.app",
+  messagingSenderId: "796796158387",
+  appId: "1:796796158387:web:613eac60fa6bc18e60cbc6"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function generateClinicId() {
+  return 'CLN-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+}
+
+async function doRegister() {
+  const fullName = document.getElementById('fullName').value.trim();
+  const clinicName = document.getElementById('clinicName').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const username = document.getElementById('username').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+  const password2 = document.getElementById('password2').value;
+  const agree = document.getElementById('agree').checked;
+  const errEl = document.getElementById('error');
+  const sucEl = document.getElementById('success');
+  const btn = document.getElementById('registerBtn');
+  errEl.classList.add('hidden');
+  sucEl.classList.add('hidden');
+
+  if (!fullName || !clinicName || !phone || !username || !password) {
+    errEl.textContent = '⚠️ أكمل جميع الحقول المطلوبة (*)';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (!/^[a-z0-9]{3,20}$/.test(username)) {
+    errEl.textContent = '⚠️ اسم المستخدم: 3-20 حرف إنجليزي أو رقم فقط';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (password.length < 6) {
+    errEl.textContent = '⚠️ كلمة المرور 6 أحرف على الأقل';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (password !== password2) {
+    errEl.textContent = '⚠️ كلمتا المرور غير متطابقتين';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (!agree) {
+    errEl.textContent = '⚠️ يجب الموافقة على الشروط';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الإنشاء...';
+
+  try {
+    // 1. التحقق من عدم وجود username
+    const existing = await db.collection('users').doc(username).get();
+    if (existing.exists) {
+      errEl.textContent = '❌ اسم المستخدم مستخدم — جرب اسماً آخر';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = '✨ إنشاء العيادة (مجاناً)';
+      return;
+    }
+
+    // 2. توليد clinicId فريد
+    const clinicId = generateClinicId();
+
+    // 3. إنشاء وثيقة العيادة
+    await db.collection('clinics').doc(clinicId).set({
+      clinicId: clinicId,
+      name: clinicName,
+      ownerUsername: username,
+      ownerName: fullName,
+      phone: phone,
+      address: address,
+      subscription: {
+        plan: 'free',
+        startedAt: new Date(),
+        expiresAt: null
+      },
+      active: true,
+      createdAt: new Date()
+    });
+
+    // 4. إنشاء وثيقة المستخدم (owner)
+    await db.collection('users').doc(username).set({
+      username: username,
+      password: password,
+      fullName: fullName,
+      role: 'owner',
+      clinicId: clinicId,
+      phone: phone,
+      active: true,
+      subscription: {
+        plan: 'free',
+        startedAt: new Date(),
+        expiresAt: null
+      },
+      createdAt: new Date()
+    });
+
+    // 5. سجل النشاط
+    try {
+      await db.collection('activity').add({
+        username: username,
+        fullName: fullName,
+        role: 'owner',
+        clinicId: clinicId,
+        action: 'تسجيل عيادة جديدة',
+        timestamp: new Date()
+      });
+    } catch(e) {}
+
+    // 6. حفظ الجلسة
+    localStorage.setItem('currentUser', JSON.stringify({
+      username: username,
+      fullName: fullName,
+      role: 'owner',
+      clinicId: clinicId
+    }));
+
+    sucEl.innerHTML = `
+      ✅ تم إنشاء العيادة!<br>
+      <span style="font-size:10px;">معرف العيادة: <strong>${clinicId}</strong></span>
+    `;
+    sucEl.classList.remove('hidden');
+
+    setTimeout(() => {
+      window.location.href = 'Clinical.html';
+    }, 2000);
+
+  } catch (e) {
+    console.error(e);
+    errEl.textContent = '❌ خطأ: ' + e.message;
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = '✨ إنشاء العيادة (مجاناً)';
+  }
+}
+</script>
+
+</body>
+</html>

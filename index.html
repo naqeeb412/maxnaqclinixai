@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NAQClinixAI — النظام الموحد</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+html,body{height:100%;overflow:hidden;background:#0b1220;color:#e8eef7}
+#app{display:flex;flex-direction:column;height:100vh}
+#topbar{background:linear-gradient(135deg,#1e3a8a,#0d9488);padding:8px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.3);z-index:100;min-height:56px;flex-wrap:wrap}
+#topbar .logo{font-size:22px}
+#topbar .brand{font-weight:800;font-size:15px;color:#fff;letter-spacing:.5px;margin-left:8px}
+#topbar .tabs{display:flex;gap:6px;flex:1;flex-wrap:wrap}
+#topbar .tab-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;transition:all .2s;font-family:inherit;white-space:nowrap}
+#topbar .tab-btn:hover{background:rgba(255,255,255,.25)}
+#topbar .tab-btn.active{background:#fff;color:#1e3a8a;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#topbar .user-info{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);padding:5px 10px;border-radius:8px;font-size:11px;max-width:180px}
+#topbar .user-info .avatar{width:28px;height:28px;border-radius:50%;background:#fff;color:#1e3a8a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+#topbar .user-info .meta{overflow:hidden}
+#topbar .user-info .name{font-weight:700;color:#fff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#topbar .user-info .role{color:rgba(255,255,255,.8);font-size:9px}
+#topbar .logout-btn{background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.5);color:#fecaca;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;white-space:nowrap}
+#topbar .logout-btn:hover{background:rgba(239,68,68,.4)}
+#mainFrame{flex:1;width:100%;border:none;background:#f0f4f8;display:block}
+#loadingOverlay{position:fixed;inset:0;background:rgba(11,18,32,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:999}
+#loadingOverlay.show{display:flex}
+.spinner{width:50px;height:50px;border:4px solid rgba(20,184,166,.2);border-top-color:#14b8a6;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loadingOverlay p{color:#8fa3bf;font-size:14px;font-weight:600}
+#errorBanner{display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:998;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:90%}
+#errorBanner.show{display:block}
+@media(max-width:768px){
+  #topbar{padding:6px 8px;min-height:48px;gap:6px}
+  #topbar .brand{font-size:12px;margin-left:4px}
+  #topbar .tab-btn{padding:6px 8px;font-size:10px}
+  #topbar .user-info{display:none!important}
+  #topbar .logout-btn{padding:5px 8px;font-size:10px}
+  #topbar .logo{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="topbar">
+    <div class="logo">🦷</div>
+    <div class="brand">NAQClinixAI</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="clinic" onclick="switchTab('clinic')">🏥 العيادة</button>
+      <button class="tab-btn" data-tab="lab" onclick="switchTab('lab')">🧪 المعمل</button>
+      <button class="tab-btn" data-tab="analyzer" onclick="switchTab('analyzer')">🔬 التحليل</button>
+    </div>
+
+    <div class="user-info" id="userInfo" style="display:none">
+      <div class="avatar" id="userAvatar">-</div>
+      <div class="meta">
+        <div class="name" id="userName">-</div>
+        <div class="role" id="userRole">-</div>
+      </div>
+    </div>
+
+    <button class="logout-btn" onclick="logout()" style="display:none" id="logoutBtn">🚪</button>
+  </div>
+
+  <iframe id="mainFrame" src="Clinical.html" title="النظام الرئيسي"></iframe>
+</div>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <p id="loadingText">جاري التحميل...</p>
+</div>
+
+<div id="errorBanner"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// إعدادات الأنظمة
+// ═══════════════════════════════════════════════════════════════
+const SYSTEMS = {
+  clinic: { file: 'Clinical.html', name: 'العيادة' },
+  lab: { file: 'Lab.html', name: 'المعمل' },
+  analyzer: { file: 'Analyzer.html', name: 'التحليل التلقائي' }
+};
+
+let currentTab = 'clinic';
+let currentUser = null;
+let iframeLoadTimeout = null;
+
+// ═══════════════════════════════════════════════════════════════
+// التبديل بين الأنظمة
+// ═══════════════════════════════════════════════════════════════
+function switchTab(systemKey) {
+  if (!SYSTEMS[systemKey]) {
+    console.error('نظام غير معروف:', systemKey);
+    return;
+  }
+
+  // تحديث التبويبات النشطة
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === systemKey);
+  });
+
+  // عرض شاشة التحميل
+  const frame = document.getElementById('mainFrame');
+  const overlay = document.getElementById('loadingOverlay');
+  const text = document.getElementById('loadingText');
+  const errorBanner = document.getElementById('errorBanner');
+
+  overlay.classList.add('show');
+  errorBanner.classList.remove('show');
+  text.textContent = 'جاري تحميل ' + SYSTEMS[systemKey].name + '...';
+
+  // بناء الرابط
+  const url = SYSTEMS[systemKey].file;
+  frame.src = url;
+  currentTab = systemKey;
+  localStorage.setItem('currentTab', systemKey);
+
+  // إخفاء شاشة التحميل عند التحميل
+  clearTimeout(iframeLoadTimeout);
+  iframeLoadTimeout = setTimeout(() => {
+    overlay.classList.remove('show');
+  }, 3000);
+
+  frame.onload = () => {
+    clearTimeout(iframeLoadTimeout);
+    setTimeout(() => overlay.classList.remove('show'), 200);
+  };
+
+  frame.onerror = () => {
+    clearTimeout(iframeLoadTimeout);
+    overlay.classList.remove('show');
+    showError('فشل تحميل ' + SYSTEMS[systemKey].name);
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// عرض رسالة خطأ
+// ═══════════════════════════════════════════════════════════════
+function showError(msg) {
+  const banner = document.getElementById('errorBanner');
+  banner.textContent = '❌ ' + msg;
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// تحميل بيانات المستخدم
+// ═══════════════════════════════════════════════════════════════
+function loadUser() {
+  try {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) {
+      const newUser = JSON.parse(saved);
+      const changed = !currentUser || currentUser.username !== newUser.username;
+      currentUser = newUser;
+
+      document.getElementById('userInfo').style.display = 'flex';
+      document.getElementById('logoutBtn').style.display = 'block';
+      document.getElementById('userName').textContent = currentUser.fullName || currentUser.username;
+      document.getElementById('userRole').textContent =
+        currentUser.role === 'admin' ? '👑 مدير' :
+        currentUser.role === 'doctor' ? '👨‍⚕️ طبيب' : '👨‍💼 موظف';
+      document.getElementById('userAvatar').textContent = (currentUser.fullName || 'U').charAt(0);
+
+      // إذا تغير المستخدم، أعد تحميل التبويب الحالي
+      if (changed && currentTab !== 'clinic') {
+        switchTab(currentTab);
+      }
+    } else {
+      currentUser = null;
+      document.getElementById('userInfo').style.display = 'none';
+      document.getElementById('logoutBtn').style.display = 'none';
+    }
+  } catch (e) {
+    console.error('loadUser error:', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// تسجيل الخروج
+// ═══════════════════════════════════════════════════════════════
+function logout() {
+  if (!confirm('تسجيل الخروج من جميع الأنظمة؟')) return;
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('currentTab');
+  currentUser = null;
+  document.getElementById('userInfo').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  // إعادة تحميل العيادة (ستعيد توجيهها لصفحة الدخول)
+  switchTab('clinic');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// الاستماع لتغييرات localStorage (تسجيل الدخول من داخل iframe)
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('storage', (e) => {
+  if (e.key === 'currentUser') {
+    loadUser();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// استقبال رسائل من iframe (للتبديل بين الأنظمة)
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('message', (event) => {
+  if (!event.data || typeof event.data !== 'object') return;
+
+  // طلب التبديل إلى نظام
+  if (event.data.type === 'switchTab' && SYSTEMS[event.data.tab]) {
+    switchTab(event.data.tab);
+  }
+
+  // تسجيل دخول/خروج
+  if (event.data.type === 'login' || event.data.type === 'logout') {
+    loadUser();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// بدء التشغيل
+// ═══════════════════════════════════════════════════════════════
+function init() {
+  loadUser();
+
+  // استرجاع آخر تبويب
+  const savedTab = localStorage.getItem('currentTab');
+  if (savedTab && SYSTEMS[savedTab]) {
+    switchTab(savedTab);
+  } else {
+    switchTab('clinic');
+  }
+
+  // فحص دوري للمستخدم
+  setInterval(loadUser, 2000);
+}
+
+// بدء عند تحميل الصفحة
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+console.log('✅ NAQClinixAI — النظام الموحد جاهز');
+console.log('📁 الأنظمة المتاحة:', Object.keys(SYSTEMS).map(k => SYSTEMS[k].name).join(' | '));
+</script>
+
+</body>
+</html>

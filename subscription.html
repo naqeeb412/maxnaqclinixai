@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الاشتراك — NAQClinixAI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>body { font-family: 'Cairo', sans-serif; background: #f0f4f8; }</style>
+</head>
+<body class="min-h-screen p-4">
+
+<div class="max-w-5xl mx-auto">
+
+  <div class="bg-gradient-to-r from-blue-900 to-teal-700 text-white rounded-2xl p-6 mb-6 shadow-lg">
+    <div class="flex justify-between items-center flex-wrap gap-3">
+      <div>
+        <h1 class="text-2xl font-extrabold">💳 إدارة الاشتراك</h1>
+        <p class="text-sm opacity-90 mt-1" id="userGreeting">-</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="window.location.href='Clinical.html'" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-bold">← العودة</button>
+        <button onclick="doLogout()" class="bg-red-500/30 hover:bg-red-500/50 px-4 py-2 rounded-lg text-sm font-bold">🚪 خروج</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl p-6 mb-6 shadow-md border-2 border-blue-200">
+    <h2 class="text-lg font-bold text-blue-900 mb-4">📊 خطتك الحالية</h2>
+    <div id="currentPlanBox" class="text-center py-4">
+      <div class="text-gray-400">جاري التحميل...</div>
+    </div>
+  </div>
+
+  <h2 class="text-lg font-bold text-blue-900 mb-4">🎯 الخطط المتاحة</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="plansGrid">
+    <div class="text-center text-gray-400 py-8">جاري التحميل...</div>
+  </div>
+
+  <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 shadow-md border-2 border-emerald-300">
+    <h2 class="text-lg font-bold text-emerald-900 mb-2">🎟️ تفعيل كوبون</h2>
+    <p class="text-xs text-emerald-700 mb-4">أدخل كود الكوبون الذي حصلت عليه من الإدارة</p>
+    <div class="flex gap-2 flex-wrap">
+      <input type="text" id="couponCode" placeholder="NDC-XXXX-YYYY" 
+        class="flex-1 p-3 border-2 border-emerald-300 rounded-xl text-sm font-bold text-center tracking-wider uppercase focus:outline-none focus:border-emerald-600"
+        onkeydown="if(event.key==='Enter')redeemCoupon()">
+      <button onclick="redeemCoupon()" id="redeemBtn" 
+        class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-50">
+        ✅ تفعيل
+      </button>
+    </div>
+    <p id="couponMsg" class="hidden text-xs font-bold p-3 rounded-lg mt-3"></p>
+  </div>
+
+  <div class="bg-white rounded-2xl p-6 mt-6 shadow-md">
+    <h2 class="text-lg font-bold text-blue-900 mb-4">📜 سجل الاشتراكات</h2>
+    <div id="historyList">
+      <div class="text-center text-gray-400 py-4">لا يوجد سجل بعد</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBe5PoeoH0pJ9hC0vTjVPELNZPpmKqCjCU",
+  authDomain: "naqclinixai-dental-clinic.firebaseapp.com",
+  projectId: "naqclinixai-dental-clinic",
+  storageBucket: "naqclinixai-dental-clinic.firebasestorage.app",
+  messagingSenderId: "796796158387",
+  appId: "1:796796158387:web:613eac60fa6bc18e60cbc6"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let currentUser = null;
+let userData = null;
+
+// ═══════════════════════════════════════════════════════════════
+// الخطط — عدّل الأسعار بحرية
+// ═══════════════════════════════════════════════════════════════
+const PLANS = {
+  free: {
+    name: 'مجانية',
+    price: 0,
+    duration: null,
+    icon: '🆓',
+    color: 'gray',
+    features: ['👥 حتى 15 مريض', '💬 Dentbook', '📊 تقارير أساسية', '❌ بدون معمل/تحليل/Gemini']
+  },
+  weekly: {
+    name: 'أسبوعية',
+    price: 2000,
+    duration: 7,
+    icon: '⚡',
+    color: 'blue',
+    features: ['♾️ مرضى غير محدود', '🧪 المعمل', '🔬 التحليل', '🤖 Gemini AI', '📄 Excel/PDF']
+  },
+  monthly: {
+    name: 'شهرية',
+    price: 6000,
+    duration: 30,
+    icon: '🌟',
+    color: 'indigo',
+    features: ['♾️ كل شيء في الأسبوعية', '🤖 Gemini غير محدود', '📊 تقارير متقدمة', '💾 نسخ احتياطي']
+  },
+  yearly: {
+    name: 'سنوية',
+    price: 50000,
+    duration: 365,
+    icon: '👑',
+    color: 'amber',
+    features: ['♾️ كل شيء في الشهرية', '💰 توفير 30%', '⚡ أولوية دعم', '🎁 مزايا حصرية']
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// التهيئة — قراءة من localStorage (username)
+// ═══════════════════════════════════════════════════════════════
+async function init() {
+  try {
+    const saved = localStorage.getItem('currentUser');
+    if (!saved) {
+      alert('⚠️ يجب تسجيل الدخول أولاً');
+      window.location.href = 'Clinical.html';
+      return;
+    }
+    currentUser = JSON.parse(saved);
+    
+    // جلب البيانات من Firestore
+    const doc = await db.collection('users').doc(currentUser.username).get();
+    if (!doc.exists) {
+      alert('⚠️ بياناتك غير موجودة');
+      window.location.href = 'Clinical.html';
+      return;
+    }
+    
+    userData = doc.data();
+    currentUser.fullName = userData.fullName || currentUser.username;
+    currentUser.role = userData.role || 'employee';
+    currentUser.subscription = userData.subscription || { plan: 'free', expiresAt: null };
+    
+    document.getElementById('userGreeting').textContent = '👋 ' + currentUser.fullName + ' (@' + currentUser.username + ')';
+    
+    renderCurrentPlan();
+    renderPlans();
+    renderHistory();
+  } catch (e) {
+    console.error(e);
+    alert('❌ خطأ في التحميل: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// الخطة الحالية
+// ═══════════════════════════════════════════════════════════════
+function renderCurrentPlan() {
+  const box = document.getElementById('currentPlanBox');
+  const sub = currentUser.subscription || { plan: 'free', expiresAt: null };
+  const plan = PLANS[sub.plan] || PLANS.free;
+
+  let expiresText = '';
+  let statusColor = 'emerald';
+  let statusText = '✅ نشطة';
+
+  if (sub.plan === 'free') {
+    expiresText = 'دائمة (بدون تاريخ انتهاء)';
+    statusColor = 'gray';
+  } else if (sub.expiresAt) {
+    const exp = sub.expiresAt.toDate ? sub.expiresAt.toDate() : new Date(sub.expiresAt.seconds * 1000);
+    const now = new Date();
+    const daysLeft = Math.ceil((exp - now) / 86400000);
+    
+    if (daysLeft < 0) {
+      statusColor = 'red';
+      statusText = '❌ منتهية';
+      expiresText = 'انتهت في ' + exp.toLocaleDateString('ar-YE');
+    } else if (daysLeft <= 3) {
+      statusColor = 'amber';
+      statusText = '⚠️ تنتهي قريباً';
+      expiresText = 'تنتهي في ' + exp.toLocaleDateString('ar-YE') + ' (' + daysLeft + ' يوم)';
+    } else {
+      expiresText = 'تنتهي في ' + exp.toLocaleDateString('ar-YE') + ' (' + daysLeft + ' يوم)';
+    }
+  } else {
+    expiresText = 'دائمة';
+  }
+
+  box.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-${statusColor}-50 rounded-xl p-4 border-2 border-${statusColor}-300">
+        <div class="text-xs text-${statusColor}-700 font-bold mb-1">الخطة الحالية</div>
+        <div class="text-2xl font-extrabold text-${statusColor}-900">${plan.icon} ${plan.name}</div>
+      </div>
+      <div class="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
+        <div class="text-xs text-gray-600 font-bold mb-1">الحالة</div>
+        <div class="text-lg font-extrabold text-${statusColor}-700">${statusText}</div>
+      </div>
+      <div class="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+        <div class="text-xs text-blue-700 font-bold mb-1">الصلاحية</div>
+        <div class="text-sm font-extrabold text-blue-900">${expiresText}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// الخطط
+// ═══════════════════════════════════════════════════════════════
+function renderPlans() {
+  const grid = document.getElementById('plansGrid');
+  const currentPlanKey = currentUser.subscription?.plan || 'free';
+
+  let html = '';
+  Object.entries(PLANS).forEach(([key, plan]) => {
+    const isCurrent = key === currentPlanKey;
+    const c = plan.color;
+
+    html += `
+      <div class="bg-white rounded-2xl p-5 shadow-md border-2 ${isCurrent ? 'border-' + c + '-500 ring-2 ring-' + c + '-300' : 'border-gray-200'} relative">
+        ${isCurrent ? '<div class="absolute -top-3 right-1/2 translate-x-1/2 bg-' + c + '-500 text-white px-3 py-0.5 rounded-full text-[10px] font-bold">الحالية</div>' : ''}
+        <div class="text-center mb-3">
+          <div class="text-4xl mb-2">${plan.icon}</div>
+          <h3 class="text-lg font-extrabold text-${c}-900">${plan.name}</h3>
+          <div class="mt-2">
+            ${plan.price === 0 
+              ? '<span class="text-2xl font-extrabold text-gray-700">مجاناً</span>' 
+              : '<span class="text-2xl font-extrabold text-' + c + '-700">' + plan.price.toLocaleString() + '</span><span class="text-xs text-gray-500"> ريال</span>'
+            }
+          </div>
+          <div class="text-xs text-gray-500 mt-1">${plan.duration ? 'لمدة ' + plan.duration + ' يوم' : 'دائمة'}</div>
+        </div>
+        <ul class="space-y-1.5 text-xs text-gray-700 mb-4">
+          ${plan.features.map(f => '<li class="flex items-start gap-1">' + f + '</li>').join('')}
+        </ul>
+        ${key === 'free' ? '' : `
+          <button onclick="showPaymentInfo('${key}')" 
+            class="w-full bg-${c}-600 hover:bg-${c}-700 text-white p-2 rounded-lg text-xs font-bold">
+            💳 اشترك
+          </button>
+        `}
+      </div>
+    `;
+  });
+  grid.innerHTML = html;
+}
+
+function showPaymentInfo(planKey) {
+  const plan = PLANS[planKey];
+  alert(
+    '💳 للاشتراك في الخطة ' + plan.name + ':\n\n' +
+    '💰 المبلغ: ' + plan.price.toLocaleString() + ' ريال يمني\n' +
+    '⏱️ المدة: ' + plan.duration + ' يوم\n\n' +
+    '━━━━━━━━━━━━━━━\n' +
+    'طرق الدفع:\n' +
+    '📱 محفظة: 777700412\n' +
+    '🏦 تحويل بنكي: (تواصل معنا)\n\n' +
+    'بعد الدفع، أرسل إثبات الدفع على واتساب:\n' +
+    '📞 777700412\n\n' +
+    'ستصلك كود الكوبون في أقرب وقت ✅'
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// تفعيل كوبون
+// ═══════════════════════════════════════════════════════════════
+async function redeemCoupon() {
+  const input = document.getElementById('couponCode');
+  const code = input.value.trim().toUpperCase();
+  const btn = document.getElementById('redeemBtn');
+  const msg = document.getElementById('couponMsg');
+
+  if (!code) {
+    showCouponMsg('⚠️ أدخل كود الكوبون', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  msg.classList.add('hidden');
+
+  try {
+    const couponDoc = await db.collection('coupons').doc(code).get();
+    if (!couponDoc.exists) {
+      showCouponMsg('❌ الكوبون غير موجود', 'error');
+      return;
+    }
+
+    const coupon = couponDoc.data();
+
+    if (coupon.used === true) {
+      showCouponMsg('❌ هذا الكوبون مستخدم من قبل', 'error');
+      return;
+    }
+
+    if (coupon.expiresAt) {
+      const exp = coupon.expiresAt.toDate ? coupon.expiresAt.toDate() : new Date(coupon.expiresAt.seconds * 1000);
+      if (new Date() > exp) {
+        showCouponMsg('❌ الكوبون منتهي الصلاحية', 'error');
+        return;
+      }
+    }
+
+    const plan = PLANS[coupon.plan] || PLANS.free;
+    const duration = coupon.duration || plan.duration || 30;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + duration * 86400000);
+
+    // تحديث اشتراك المستخدم (بـ username)
+    await db.collection('users').doc(currentUser.username).update({
+      subscription: {
+        plan: coupon.plan,
+        startedAt: new Date(),
+        expiresAt: expiresAt,
+        couponUsed: code
+      }
+    });
+
+    // تحديث الكوبون
+    await db.collection('coupons').doc(code).update({
+      used: true,
+      usedBy: currentUser.username,
+      usedByName: currentUser.fullName,
+      usedAt: new Date()
+    });
+
+    // سجل الاشتراك
+    await db.collection('subscription_history').add({
+      username: currentUser.username,
+      fullName: currentUser.fullName,
+      plan: coupon.plan,
+      duration: duration,
+      startsAt: new Date(),
+      expiresAt: expiresAt,
+      coupon: code,
+      amount: coupon.amount || 0,
+      timestamp: new Date()
+    });
+
+    showCouponMsg('✅ تم التفعيل! الخطة ' + plan.name + ' حتى ' + expiresAt.toLocaleDateString('ar-YE'), 'success');
+    input.value = '';
+
+    setTimeout(() => window.location.reload(), 2000);
+
+  } catch (e) {
+    console.error(e);
+    showCouponMsg('❌ خطأ: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showCouponMsg(text, type) {
+  const msg = document.getElementById('couponMsg');
+  msg.textContent = text;
+  msg.className = 'text-xs font-bold p-3 rounded-lg mt-3 ' + 
+    (type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800');
+  msg.classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// سجل الاشتراكات
+// ═══════════════════════════════════════════════════════════════
+async function renderHistory() {
+  const list = document.getElementById('historyList');
+  try {
+    const snap = await db.collection('subscription_history')
+      .where('username', '==', currentUser.username)
+      .orderBy('timestamp', 'desc')
+      .limit(20)
+      .get();
+
+    if (snap.empty) {
+      list.innerHTML = '<div class="text-center text-gray-400 py-4">لا يوجد سجل بعد</div>';
+      return;
+    }
+
+    let html = '<div class="space-y-2">';
+    snap.forEach(doc => {
+      const h = doc.data();
+      const plan = PLANS[h.plan] || PLANS.free;
+      const date = h.timestamp ? new Date(h.timestamp.seconds * 1000).toLocaleString('ar-YE') : '-';
+      const expDate = h.expiresAt ? new Date(h.expiresAt.seconds * 1000).toLocaleDateString('ar-YE') : '—';
+
+      html += `
+        <div class="bg-gray-50 rounded-lg p-3 flex justify-between items-center flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">${plan.icon}</span>
+            <div>
+              <div class="font-bold text-sm">${plan.name}</div>
+              <div class="text-[10px] text-gray-500">${date}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-bold text-blue-700">حتى ${expDate}</div>
+            ${h.coupon ? '<div class="text-[10px] text-gray-500">🎟️ ' + h.coupon + '</div>' : ''}
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    list.innerHTML = html;
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = '<div class="text-center text-red-400 py-4">فشل التحميل</div>';
+  }
+}
+
+function doLogout() {
+  if (!confirm('تسجيل الخروج؟')) return;
+  localStorage.removeItem('currentUser');
+  window.location.href = 'Clinical.html';
+}
+
+init();
+</script>
+
+</body>
+</html>

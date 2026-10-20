@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة خطط الاشتراك — NAQClinixAI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>body{font-family:'Cairo',sans-serif;background:#f0f2f5}</style>
+</head>
+<body class="min-h-screen p-4">
+
+<div id="loadingScreen" class="fixed inset-0 bg-gradient-to-br from-blue-900 to-teal-600 flex items-center justify-center z-50">
+  <div class="text-white text-center"><div class="text-6xl mb-4">💳</div><div class="text-xl font-bold">جاري التحميل...</div></div>
+</div>
+
+<div class="max-w-5xl mx-auto">
+  <div class="bg-gradient-to-r from-blue-900 to-teal-600 text-white rounded-2xl p-5 mb-4 flex justify-between items-center">
+    <div>
+      <h1 class="text-xl font-extrabold">💳 إدارة خطط الاشتراك</h1>
+      <p class="text-xs opacity-80 mt-1" id="userLabel">...</p>
+    </div>
+    <a href="clinical.html" class="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg text-xs font-bold">← رجوع</a>
+  </div>
+
+  <!-- بطاقة إضافة خطة -->
+  <div class="bg-white rounded-2xl shadow p-5 mb-4">
+    <h2 class="font-bold text-blue-900 mb-3">➕ إضافة خطة اشتراك جديدة</h2>
+
+    <!-- المعلومات الأساسية -->
+    <div class="grid md:grid-cols-2 gap-3 mb-3">
+      <input type="text" id="planName" placeholder="اسم الخطة (مثال: شهري - VIP)" class="p-2 border rounded-lg text-sm">
+      
+      <select id="planDurationType" class="p-2 border rounded-lg text-sm">
+        <option value="weekly">أسبوعي (7 أيام)</option>
+        <option value="monthly" selected>شهري (30 يوم)</option>
+        <option value="yearly">سنوي (365 يوم)</option>
+        <option value="custom">مخصص</option>
+      </select>
+
+      <input type="number" id="planDuration" placeholder="المدة بالأيام (يُملأ تلقائياً)" class="p-2 border rounded-lg text-sm" readonly>
+
+      <div class="grid grid-cols-2 gap-2">
+        <input type="number" id="planPrice" placeholder="المبلغ" class="p-2 border rounded-lg text-sm">
+        <select id="planCurrency" class="p-2 border rounded-lg text-sm">
+          <option value="YER">ريال يمني</option>
+          <option value="USD">دولار</option>
+          <option value="USDT">USDT</option>
+          <option value="SAR">ريال سعودي</option>
+          <option value="AED">درهم إماراتي</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- الأقسام المشمولة -->
+    <div class="mb-3">
+      <label class="text-sm font-bold text-blue-900 block mb-2">📋 الأقسام المشمولة بالاشتراك:</label>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2 bg-gray-50 p-3 rounded-lg">
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="dashboard" checked> 📊 لوحة التحكم</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="patients" checked> 📋 المرضى</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="lab"> 🧪 المعمل</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="analysis"> 🔬 التحليل</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="archive"> 🖼️ الأرشيف</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="dentchat"> 💬 DentChat</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="dentbook"> 📖 DentBook</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="profile"> 👤 الملف الشخصي</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="admin"> 👑 لوحة المدير</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="expenses"> 💸 المصروفات</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="ai"> 🤖 الذكاء الاصطناعي</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="excel"> 📄 تصدير Excel</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="whatsapp"> 📱 إرسال واتساب</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="reports"> 🖨️ التقارير</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="planSection" value="lab_full"> 🧪 معمل متقدم</label>
+      </div>
+    </div>
+
+    <!-- طرق الدفع -->
+    <div class="mb-3">
+      <label class="text-sm font-bold text-blue-900 block mb-2">💳 طرق الدفع (أضف ما يناسبك):</label>
+
+      <!-- Binance -->
+      <div class="bg-yellow-50 p-3 rounded-lg mb-2">
+        <label class="flex items-center gap-2 text-sm font-bold mb-2">
+          <input type="checkbox" id="payBinance" class="payMethod"> Binance
+        </label>
+        <div id="binanceFields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-2">
+          <input type="text" id="binanceWalletId" placeholder="Binance ID / عنوان المحفظة" class="p-2 border rounded-lg text-sm" dir="ltr">
+          <input type="text" id="binancePlatform" placeholder="رابط المنصة / الموقع" class="p-2 border rounded-lg text-sm" dir="ltr">
+          <input type="text" id="binanceCurrency" placeholder="نوع العملة (USDT/BTC...)" class="p-2 border rounded-lg text-sm" dir="ltr">
+        </div>
+      </div>
+
+      <!-- FaucetPay -->
+      <div class="bg-green-50 p-3 rounded-lg mb-2">
+        <label class="flex items-center gap-2 text-sm font-bold mb-2">
+          <input type="checkbox" id="payFaucetPay" class="payMethod"> FaucetPay
+        </label>
+        <div id="faucetpayFields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-2">
+          <input type="text" id="faucetpayEmail" placeholder="FaucetPay Email أو الحساب" class="p-2 border rounded-lg text-sm" dir="ltr">
+          <input type="text" id="faucetpayCurrency" placeholder="نوع العملة (USDT/BTC...)" class="p-2 border rounded-lg text-sm" dir="ltr">
+        </div>
+      </div>
+
+      <!-- حوالة بنكية -->
+      <div class="bg-blue-50 p-3 rounded-lg mb-2">
+        <label class="flex items-center gap-2 text-sm font-bold mb-2">
+          <input type="checkbox" id="payBank" class="payMethod"> حوالة بنكية / CAK Bank
+        </label>
+        <div id="bankFields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-2">
+          <input type="text" id="bankName" placeholder="اسم البنك (مثال: CAK Bank)" class="p-2 border rounded-lg text-sm">
+          <input type="text" id="bankAccount" placeholder="رقم الحساب" class="p-2 border rounded-lg text-sm" dir="ltr">
+          <input type="text" id="bankHolder" placeholder="اسم صاحب الحساب" class="p-2 border rounded-lg text-sm">
+          <input type="text" id="bankIBAN" placeholder="IBAN / رقم الحساب الدولي" class="p-2 border rounded-lg text-sm" dir="ltr">
+        </div>
+      </div>
+
+      <!-- محفظة إلكترونية أخرى -->
+      <div class="bg-purple-50 p-3 rounded-lg mb-2">
+        <label class="flex items-center gap-2 text-sm font-bold mb-2">
+          <input type="checkbox" id="payOther" class="payMethod"> محفظة / عملة أخرى
+        </label>
+        <div id="otherFields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-2">
+          <input type="text" id="otherPlatform" placeholder="اسم المنصة (مثال: Payeer / PerfectMoney)" class="p-2 border rounded-lg text-sm">
+          <input type="text" id="otherAccount" placeholder="رقم الحساب / المحفظة" class="p-2 border rounded-lg text-sm" dir="ltr">
+          <input type="text" id="otherCurrency" placeholder="نوع العملة" class="p-2 border rounded-lg text-sm" dir="ltr">
+        </div>
+      </div>
+    </div>
+
+    <!-- وصف الخطة -->
+    <div class="mb-3">
+      <label class="text-sm font-bold text-blue-900 block mb-1">📝 وصف / مميزات إضافية</label>
+      <textarea id="planDescription" rows="2" placeholder="مثال: دردشة غير محدودة، دعم أولوية..." class="w-full p-2 border rounded-lg text-sm"></textarea>
+    </div>
+
+    <button onclick="savePlan()" class="bg-emerald-600 text-white w-full p-3 rounded-lg font-bold">💾 حفظ الخطة</button>
+  </div>
+
+  <!-- قائمة الخطط -->
+  <div class="bg-white rounded-2xl shadow p-5">
+    <h2 class="font-bold text-blue-900 mb-3">📋 الخطط الحالية</h2>
+    <div id="plansList" class="space-y-3"><div class="text-gray-400 text-center py-4">جاري التحميل...</div></div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBe5PoeoH0pJ9hC0vTjVPELNZPpmKqCjCU",
+  authDomain: "naqclinixai-dental-clinic.firebaseapp.com",
+  projectId: "naqclinixai-dental-clinic",
+  storageBucket: "naqclinixai-dental-clinic.firebasestorage.app",
+  messagingSenderId: "796796158387",
+  appId: "1:796796158387:web:613eac60fa6bc18e60cbc6"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+
+auth.onAuthStateChanged(async (user) => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  currentUser = user;
+  const userDoc = await db.collection('users').doc(user.uid).get();
+  if (!userDoc.exists || userDoc.data().role !== 'owner') {
+    alert('⛔ هذه الصفحة للمالك فقط');
+    window.location.href = 'clinical.html';
+    return;
+  }
+  document.getElementById('userLabel').textContent = user.email;
+  document.getElementById('loadingScreen').style.display = 'none';
+  loadPlans();
+});
+
+// تحديث المدة تلقائياً عند تغيير النوع
+document.getElementById('planDurationType').addEventListener('change', (e) => {
+  const v = e.target.value;
+  const map = { weekly: 7, monthly: 30, yearly: 365 };
+  const dur = document.getElementById('planDuration');
+  if (map[v]) { dur.value = map[v]; dur.readOnly = true; }
+  else { dur.value = ''; dur.readOnly = false; }
+});
+
+// إظهار/إخفاء الحقول حسب طريقة الدفع
+['Binance', 'FaucetPay', 'Bank', 'Other'].forEach(key => {
+  document.getElementById('pay' + key).addEventListener('change', (e) => {
+    const map = {
+      Binance: 'binanceFields',
+      FaucetPay: 'faucetpayFields',
+      Bank: 'bankFields',
+      Other: 'otherFields'
+    };
+    const box = document.getElementById(map[key]);
+    if (e.target.checked) box.classList.remove('hidden');
+    else box.classList.add('hidden');
+  });
+});
+
+async function savePlan() {
+  const name = document.getElementById('planName').value.trim();
+  const durationType = document.getElementById('planDurationType').value;
+  const duration = parseInt(document.getElementById('planDuration').value) || 30;
+  const price = parseFloat(document.getElementById('planPrice').value) || 0;
+  const currency = document.getElementById('planCurrency').value;
+  const description = document.getElementById('planDescription').value.trim();
+
+  if (!name || !price) return alert('اسم الخطة والسعر مطلوبان');
+
+  // جمع الأقسام المختارة
+  const sections = Array.from(document.querySelectorAll('.planSection:checked')).map(c => c.value);
+
+  // جمع طرق الدفع
+  const paymentMethods = {};
+  if (document.getElementById('payBinance').checked) {
+    paymentMethods.binance = {
+      walletId: document.getElementById('binanceWalletId').value,
+      platform: document.getElementById('binancePlatform').value,
+      currency: document.getElementById('binanceCurrency').value
+    };
+  }
+  if (document.getElementById('payFaucetPay').checked) {
+    paymentMethods.faucetpay = {
+      email: document.getElementById('faucetpayEmail').value,
+      currency: document.getElementById('faucetpayCurrency').value
+    };
+  }
+  if (document.getElementById('payBank').checked) {
+    paymentMethods.bank = {
+      bankName: document.getElementById('bankName').value,
+      account: document.getElementById('bankAccount').value,
+      holder: document.getElementById('bankHolder').value,
+      iban: document.getElementById('bankIBAN').value
+    };
+  }
+  if (document.getElementById('payOther').checked) {
+    paymentMethods.other = {
+      platform: document.getElementById('otherPlatform').value,
+      account: document.getElementById('otherAccount').value,
+      currency: document.getElementById('otherCurrency').value
+    };
+  }
+
+  if (Object.keys(paymentMethods).length === 0) {
+    return alert('أضف طريقة دفع واحدة على الأقل');
+  }
+
+  try {
+    await db.collection('subscription_plans').add({
+      name,
+      durationType,
+      duration,
+      price,
+      currency,
+      description,
+      sections,
+      paymentMethods,
+      active: true,
+      createdAt: new Date(),
+      createdBy: currentUser.uid
+    });
+
+    // تفريغ الحقول
+    document.getElementById('planName').value = '';
+    document.getElementById('planPrice').value = '';
+    document.getElementById('planDescription').value = '';
+    document.querySelectorAll('.planSection').forEach(c => c.checked = false);
+    document.querySelectorAll('.payMethod').forEach(c => c.checked = false);
+    ['binanceFields','faucetpayFields','bankFields','otherFields'].forEach(id => document.getElementById(id).classList.add('hidden'));
+
+    loadPlans();
+    alert('✅ تم حفظ الخطة بنجاح');
+  } catch (e) { alert('خطأ: ' + e.message); }
+}
+
+async function loadPlans() {
+  try {
+    const snap = await db.collection('subscription_plans').orderBy('createdAt', 'desc').get();
+    const list = document.getElementById('plansList');
+    if (snap.empty) {
+      list.innerHTML = '<div class="text-gray-400 text-center py-4">لا توجد خطط بعد</div>';
+      return;
+    }
+    list.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const durationLabel = d.durationType === 'weekly' ? 'أسبوعي' : d.durationType === 'monthly' ? 'شهري' : d.durationType === 'yearly' ? 'سنوي' : d.duration + ' يوم';
+      const methods = Object.keys(d.paymentMethods || {}).map(m => {
+        if (m === 'binance') return '🔶 Binance';
+        if (m === 'faucetpay') return '💚 FaucetPay';
+        if (m === 'bank') return '🏦 بنكي';
+        if (m === 'other') return '💼 أخرى';
+        return m;
+      }).join(' • ');
+
+      const div = document.createElement('div');
+      div.className = 'p-4 border-2 border-blue-100 rounded-xl bg-blue-50/50';
+      div.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <div class="font-extrabold text-blue-900 text-lg">${d.name}</div>
+            <div class="text-sm text-gray-600">${durationLabel} — ${d.price} ${d.currency}</div>
+          </div>
+          <button onclick="deletePlan('${doc.id}')" class="text-red-600 text-xs font-bold">🗑️ حذف</button>
+        </div>
+        <div class="text-xs text-gray-700 mb-1"><strong>الأقسام:</strong> ${(d.sections || []).map(s => s).join(' • ')}</div>
+        <div class="text-xs text-gray-700 mb-1"><strong>طرق الدفع:</strong> ${methods}</div>
+        ${d.description ? `<div class="text-xs text-gray-600 mt-1">📝 ${d.description}</div>` : ''}
+        ${d.paymentMethods?.binance ? `<div class="text-xs mt-1" dir="ltr">🔶 Binance: ${d.paymentMethods.binance.walletId} | ${d.paymentMethods.binance.currency}</div>` : ''}
+        ${d.paymentMethods?.faucetpay ? `<div class="text-xs mt-1" dir="ltr">💚 FaucetPay: ${d.paymentMethods.faucetpay.email}</div>` : ''}
+        ${d.paymentMethods?.bank ? `<div class="text-xs mt-1">🏦 ${d.paymentMethods.bank.bankName}: ${d.paymentMethods.bank.account}</div>` : ''}
+        ${d.paymentMethods?.other ? `<div class="text-xs mt-1" dir="ltr">💼 ${d.paymentMethods.other.platform}: ${d.paymentMethods.other.account}</div>` : ''}
+      `;
+      list.appendChild(div);
+    });
+  } catch (e) { console.error(e); }
+}
+
+async function deletePlan(id) {
+  if (!confirm('حذف هذه الخطة نهائياً؟')) return;
+  try {
+    await db.collection('subscription_plans').doc(id).delete();
+    loadPlans();
+  } catch (e) { alert('خطأ: ' + e.message); }
+}
+</script>
+</body>
+</html>

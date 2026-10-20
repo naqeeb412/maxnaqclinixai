@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ربط المالك بـ Firebase Auth</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>body { font-family: 'Cairo', sans-serif; }</style>
+</head>
+<body class="min-h-screen bg-slate-100 p-4 flex items-center justify-center">
+
+<div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+  <h1 class="text-xl font-extrabold text-blue-900 text-center mb-2">🔗 ربط المالك بـ Auth</h1>
+  <p class="text-xs text-gray-500 text-center mb-4">سكربت يعمل مرة واحدة فقط</p>
+
+  <div class="space-y-3">
+    <div>
+      <label class="text-xs font-bold text-gray-700 block mb-1">📧 الإيميل</label>
+      <input type="email" id="email" value="naqclinixai@gmail.com" readonly
+        class="w-full p-2.5 border-2 border-gray-200 rounded-lg text-sm bg-gray-50">
+    </div>
+    <div>
+      <label class="text-xs font-bold text-gray-700 block mb-1">🔒 كلمة مرور حساب Auth</label>
+      <input type="password" id="password" placeholder="كلمة مرور Firebase Auth"
+        class="w-full p-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+    </div>
+    <div>
+      <label class="text-xs font-bold text-gray-700 block mb-1">👤 اسم المستخدم</label>
+      <input type="text" id="username" value="drali" readonly dir="ltr"
+        class="w-full p-2.5 border-2 border-gray-200 rounded-lg text-sm bg-gray-50">
+    </div>
+
+    <button onclick="fixOwner()" id="btn"
+      class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3 rounded-xl font-bold hover:opacity-90 disabled:opacity-50">
+      🔗 اربط الآن
+    </button>
+
+    <p id="msg" class="hidden text-xs text-center p-2 rounded-lg font-bold"></p>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBe5PoeoH0pJ9hC0vTjVPELNZPpmKqCjCU",
+  authDomain: "naqclinixai-dental-clinic.firebaseapp.com",
+  projectId: "naqclinixai-dental-clinic",
+  storageBucket: "naqclinixai-dental-clinic.firebasestorage.app",
+  messagingSenderId: "796796158387",
+  appId: "1:796796158387:web:613eac60fa6bc18e60cbc6"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+async function fixOwner() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const username = document.getElementById('username').value.trim().toLowerCase();
+  const btn = document.getElementById('btn');
+
+  if (!password) { showMsg('⚠️ أدخل كلمة المرور', 'error'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الربط...';
+
+  try {
+    const cred = await auth.signInWithEmailAndPassword(email, password);
+    const uid = cred.user.uid;
+
+    const userRef = db.collection('users').doc(username);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      await userRef.set({
+        username: username,
+        uid: uid,
+        authEmail: email,
+        fullName: 'د. علي النقيب',
+        role: 'owner',
+        clinicId: 'CLN-MAIN-001',
+        phone: '',
+        active: true,
+        subscription: { plan: 'free', startedAt: new Date(), expiresAt: null },
+        createdAt: new Date(),
+        linkedAt: new Date()
+      });
+      showMsg(`✅ تم إنشاء users/${username} وربطها!\nUID: ${uid.slice(0,8)}...\n\nجاري التحويل...`, 'success');
+      localStorage.setItem('currentUser', JSON.stringify({
+        uid: uid, username: username,
+        fullName: 'د. علي النقيب', role: 'owner',
+        clinicId: 'CLN-MAIN-001'
+      }));
+    } else {
+      await userRef.update({ uid: uid, authEmail: email, linkedAt: new Date() });
+      const userData = userDoc.data();
+      localStorage.setItem('currentUser', JSON.stringify({
+        uid: uid, username: username,
+        fullName: userData.fullName, role: userData.role,
+        clinicId: userData.clinicId
+      }));
+      showMsg(`✅ تم الربط!\nUID: ${uid.slice(0,8)}...\n\nجاري التحويل...`, 'success');
+    }
+
+    setTimeout(() => window.location.href = 'clinical.html', 2500);
+
+  } catch (e) {
+    console.error(e);
+    let errText = e.message;
+    if (e.code === 'auth/wrong-password') errText = 'كلمة المرور غير صحيحة';
+    if (e.code === 'auth/user-not-found') errText = 'الإيميل غير موجود في Auth';
+    if (e.code === 'auth/too-many-requests') errText = 'محاولات كثيرة — انتظر دقيقة';
+    if (e.code === 'permission-denied') errText = 'القواعد لا تسمح — تأكد من نشر Rules';
+    showMsg('❌ ' + errText, 'error');
+    btn.disabled = false; btn.textContent = '🔗 اربط الآن';
+  }
+}
+
+function showMsg(text, type) {
+  const msg = document.getElementById('msg');
+  msg.textContent = text;
+  msg.style.whiteSpace = 'pre-line';
+  msg.className = 'text-xs text-center p-2 rounded-lg font-bold ' +
+    (type === 'error' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700');
+}
+</script>
+
+</body>
+</html>

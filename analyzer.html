@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🔬 التحليل التلقائي - Naqeeb412 HarmonizeAI</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#0f0c29;color:#fff;padding:10px;margin:0}
+.container{max-width:750px;margin:0 auto;background:rgba(255,255,255,0.05);padding:15px;border-radius:15px}
+h1{text-align:center;font-size:1.4rem;color:#a29bfe;margin:0 0 5px}
+.sub{text-align:center;color:#aaa;font-size:12px;margin-bottom:12px}
+.section{font-weight:bold;color:#fdcb6e;border-bottom:1px solid #444;padding:8px 0 3px;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:5px;margin:6px 0}
+.btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:6px 3px;text-align:center;cursor:pointer;color:#fff;font-size:10px;transition:.15s;touch-action:manipulation}
+.btn:active{transform:scale(0.95);background:rgba(255,255,255,0.2)}
+.btn .icon{font-size:18px;display:block}
+.btn .label{font-size:8px}
+.gallery{display:flex;flex-wrap:wrap;gap:5px;background:rgba(0,0,0,0.25);padding:8px;border-radius:10px;margin:8px 0;min-height:50px}
+.gallery-item{position:relative;display:inline-block}
+.gallery-item img{height:60px;border-radius:6px;background:#222}
+.gallery-item .badge{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,0.7);color:#64c8ff;font-size:7px;padding:1px 6px;border-radius:10px}
+.gallery-item .del{position:absolute;top:-4px;right:-4px;background:#f45c43;border:none;border-radius:50%;width:16px;height:16px;color:#fff;font-size:8px;cursor:pointer}
+.result-box{background:rgba(0,0,0,0.4);padding:12px;border-radius:10px;margin:10px 0;max-height:300px;overflow-y:auto;display:none;white-space:pre-wrap;font-size:12px;line-height:1.6;border-right:3px solid #667eea}
+.result-box.show{display:block}
+.btn-close{background:rgba(255,255,255,0.1);border:none;border-radius:20px;padding:2px 14px;color:#fff;cursor:pointer;font-size:10px;margin-top:6px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(0,0,0,0.9);padding:5px 16px;border-radius:10px;font-size:12px;transition:.4s;opacity:0;pointer-events:none;text-align:center;max-width:90%;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.point-selector{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:1000;overflow:auto}
+.point-selector.active{display:block}
+.point-selector img{max-width:100%;height:auto;display:block;margin:10px auto;border-radius:8px;cursor:crosshair;touch-action:none}
+.point-selector .info{text-align:center;padding:10px;color:#64c8ff;font-weight:bold;font-size:14px}
+.point-selector .controls{text-align:center;padding:10px}
+.point-selector .controls button{background:rgba(255,255,255,0.15);border:none;border-radius:20px;padding:8px 18px;color:#fff;margin:4px;cursor:pointer;font-size:13px}
+.canvas-3d{width:100%;height:380px;background:#0a0a15;border-radius:12px;border:1px solid rgba(255,255,255,0.1);display:none;margin-top:5px}
+.canvas-3d.active{display:block}
+.controls-3d{display:none;flex-wrap:wrap;gap:4px;justify-content:center;padding:5px;background:rgba(0,0,0,0.3);border-radius:10px;margin-top:5px}
+.controls-3d button{padding:3px 10px;border:none;border-radius:16px;font-size:9px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#667eea,#764ba2)}
+#vitaContainer{display:none;background:rgba(0,0,0,0.3);border-radius:10px;padding:10px;margin:6px 0}
+.vita-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:4px;margin:6px 0}
+.vita-item{padding:3px;border-radius:6px;text-align:center;border:1px solid rgba(255,255,255,0.1);font-size:7px;background:rgba(0,0,0,0.2);cursor:pointer}
+.vita-item .color-box{width:100%;height:16px;border-radius:3px;margin-bottom:2px}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:3000;overflow:auto;padding:20px}
+.modal-overlay.active{display:block}
+.modal-box{background:#1a1a2e;max-width:600px;margin:20px auto;padding:20px;border-radius:15px;border:1px solid rgba(255,255,255,0.1)}
+.modal-box h2{color:#fdcb6e;text-align:center;margin-bottom:15px}
+.modal-box .specialty-card{background:rgba(255,255,255,0.05);padding:12px;border-radius:10px;margin:10px 0;border-right:3px solid #667eea}
+.modal-box .specialty-card .title{font-weight:bold;color:#64c8ff}
+.modal-box .specialty-card .diagnosis{color:#aaa;margin:4px 0}
+.modal-box .specialty-card .treatment{color:#fdcb6e}
+.modal-box .close-modal{background:rgba(255,255,255,0.1);border:none;border-radius:20px;padding:8px 24px;color:#fff;cursor:pointer;font-size:13px;display:block;margin:15px auto}
+.comparison-table{width:100%;border-collapse:collapse;margin:10px 0;direction:rtl}
+.comparison-table th{background:#667eea;color:#fff;padding:6px;text-align:center}
+.comparison-table td{border:1px solid #555;padding:5px;text-align:center;color:#ddd}
+.comparison-table .normal{color:#4caf50}
+.comparison-table .abnormal{color:#ff6b6b}
+.comparison-table .warning{color:#fdcb6e}
+.patient-banner{background:linear-gradient(135deg,#667eea,#764ba2);padding:12px;border-radius:12px;text-align:center;margin-bottom:15px;border:1px solid rgba(255,255,255,0.1)}
+.patient-banner h2{margin:0;font-size:1.1rem;color:#fff}
+.patient-banner p{margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.8)}
+.top-bar{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#667eea,#764ba2);padding:8px 12px;border-radius:10px;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.top-bar .user-info{display:flex;align-items:center;gap:8px;font-size:12px}
+.top-bar .btn-top{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:bold}
+.patient-selector{background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.1)}
+.patient-selector select{width:100%;padding:8px;border-radius:8px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:12px}
+.patient-selector label{display:block;font-size:11px;color:#a29bfe;margin-bottom:4px;font-weight:bold}
+.save-section{background:rgba(16,185,129,0.1);border:2px solid rgba(16,185,129,0.4);border-radius:12px;padding:12px;margin-top:15px}
+.save-btn{width:100%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3)}
+.save-btn:hover{opacity:.9}
+.save-btn:disabled{background:#555;cursor:not-allowed}
+@media(max-width:480px){.grid{grid-template-columns:repeat(auto-fill,minmax(70px,1fr))}.btn{padding:4px 2px}.btn .icon{font-size:16px}.btn .label{font-size:7px}.canvas-3d{height:260px}}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="top-bar">
+    <div class="user-info"><span style="font-size:18px">🔬</span><span id="userNameDisplay">-</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button onclick="backToClinic()" class="btn-top">🏥 العيادة</button>
+      <button onclick="backToLab()" class="btn-top">🧪 المعمل</button>
+    </div>
+  </div>
+
+  <div class="patient-banner">
+    <h2 id="patientBannerTitle">✨ For Patients: See your future smile</h2>
+    <p id="patientBannerSub">🔮 اضغط على "تحليل تلقائي" للحصول على تقرير شامل</p>
+  </div>
+
+  <h1>🧑‍⚕️ Naqeeb412 HarmonizeAI</h1>
+  <div class="sub">🦷 تحليل تلقائي للوجه، الابتسامة، الأسنان، اللثة، والإطباق</div>
+
+  <div class="patient-selector">
+    <label>🔗 اختيار مريض من العيادة (اختياري):</label>
+    <select id="patientSelect" onchange="onPatientSelected()"><option value="">— مريض جديد —</option></select>
+  </div>
+
+  <div class="section">👤 بيانات المريض</div>
+  <div class="grid">
+    <div class="btn" onclick="patientInfo()"><span class="icon">📋</span><span class="label">بيانات المريض</span></div>
+    <div class="btn" onclick="uploadLogo()"><span class="icon">🏷️</span><span class="label">رفع الشعار</span></div>
+    <div class="btn" onclick="testButton()"><span class="icon">✅</span><span class="label">اختبار</span></div>
+    <div class="btn" onclick="futureSmilePreview()"><span class="icon">🔮</span><span class="label">محاكاة 3D</span></div>
+  </div>
+
+  <div class="section">📸 صور المريض</div>
+  <div class="grid">
+    <div class="btn" onclick="uploadImage('رئيسية')"><span class="icon">🖼️</span><span class="label">رئيسية</span></div>
+    <div class="btn" onclick="uploadImage('أمامي')"><span class="icon">🧑</span><span class="label">أمامي</span></div>
+    <div class="btn" onclick="uploadImage('جانبي')"><span class="icon">🧑‍🦱</span><span class="label">جانبي</span></div>
+    <div class="btn" onclick="uploadImage('ابتسامة')"><span class="icon">😁</span><span class="label">ابتسامة</span></div>
+    <div class="btn" onclick="uploadImage('داخل الفم')"><span class="icon">🦷</span><span class="label">داخل الفم</span></div>
+  </div>
+
+  <div class="section">🩻 أشعة الفم</div>
+  <div class="grid">
+    <div class="btn" onclick="uploadImage('سيفالومترك')"><span class="icon">📐</span><span class="label">سيفالومترك</span></div>
+    <div class="btn" onclick="uploadImage('بانوراما')"><span class="icon">🔄</span><span class="label">بانوراما</span></div>
+    <div class="btn" onclick="uploadImage('بيريابيكال')"><span class="icon">🔍</span><span class="label">بيريابيكال</span></div>
+    <div class="btn" onclick="uploadImage('بايت وينغ')"><span class="icon">🦷</span><span class="label">بايت وينغ</span></div>
+    <div class="btn" onclick="uploadImage('CBCT')"><span class="icon">🧊</span><span class="label">CBCT</span></div>
+  </div>
+
+  <div class="section">📷 الكاميرا</div>
+  <div class="grid"><div class="btn" onclick="openCamera()"><span class="icon">📸</span><span class="label">فتح الكاميرا</span></div></div>
+
+  <div id="gallery" class="gallery"></div>
+
+  <div class="section">📏 قياس + رسم</div>
+  <div class="grid">
+    <div class="btn" onclick="measureAndDraw()"><span class="icon">📐</span><span class="label">رسم الزوايا</span></div>
+    <div class="btn" onclick="drawFacialLines()"><span class="icon">📏</span><span class="label">خطوط الجمال</span></div>
+    <div class="btn" onclick="drawTeethGum()"><span class="icon">🦷</span><span class="label">نسب الأسنان</span></div>
+    <div class="btn" onclick="inputCephalometry()"><span class="icon">⌨️</span><span class="label">إدخال يدوي</span></div>
+  </div>
+
+  <div class="section">🎨 نماذج 3D على صورتك</div>
+  <div class="grid">
+    <div class="btn" onclick="draw3DOnImage('face')"><span class="icon">👤</span><span class="label">نموذج وجه</span></div>
+    <div class="btn" onclick="draw3DOnImage('smile')"><span class="icon">😁</span><span class="label">نموذج ابتسامة</span></div>
+    <div class="btn" onclick="draw3DOnImage('teeth')"><span class="icon">🦷</span><span class="label">أسنان طبيعية</span></div>
+    <div class="btn" onclick="draw3DOnImage('plaster')"><span class="icon">🧊</span><span class="label">طبعة جبسية</span></div>
+    <div class="btn" onclick="draw3DOnImage('cut')"><span class="icon">✂️</span><span class="label">قطع داخلي</span></div>
+    <div class="btn" onclick="draw3DOnImage('full')"><span class="icon">🌟</span><span class="label">نموذج كامل</span></div>
+    <div class="btn" onclick="toggle3D()"><span class="icon">📦</span><span class="label">إظهار/إخفاء</span></div>
+  </div>
+  <canvas id="canvas3d" class="canvas-3d"></canvas>
+  <div class="controls-3d" id="controls3d">
+    <button onclick="rotate3D('left')">⟲</button>
+    <button onclick="rotate3D('right')">⟳</button>
+    <button onclick="rotate3D('up')">⬆</button>
+    <button onclick="rotate3D('down')">⬇</button>
+    <button onclick="rotate3D('reset')">⌂</button>
+    <button onclick="toggle3DEffects()">✨ تأثيرات</button>
+    <button onclick="save3DToReport()">💾 حفظ 3D</button>
+  </div>
+
+  <div class="section">🎯 Digital Smile Design</div>
+  <div class="grid">
+    <div class="btn" onclick="autoAnalyzeAll()"><span class="icon">🤖</span><span class="label">تحليل تلقائي</span></div>
+    <div class="btn" onclick="analyzeDSDFacial()"><span class="icon">👤</span><span class="label">تحليل الوجه</span></div>
+    <div class="btn" onclick="analyzeDSDSmile()"><span class="icon">😁</span><span class="label">تحليل الابتسامة</span></div>
+    <div class="btn" onclick="analyzeDSDGingival()"><span class="icon">🦷</span><span class="label">تحليل اللثة</span></div>
+    <div class="btn" onclick="analyzeDSDDental()"><span class="icon">📐</span><span class="label">تحليل الأسنان</span></div>
+    <div class="btn" onclick="analyzeDSDOcclusion()"><span class="icon">⚙️</span><span class="label">تحليل الإطباق</span></div>
+    <div class="btn" onclick="analyzeDSDSimulation()"><span class="icon">🎨</span><span class="label">محاكاة العلاج</span></div>
+    <div class="btn" onclick="generateComparisonTable()"><span class="icon">📊</span><span class="label">جدول المقارنة</span></div>
+  </div>
+
+  <div class="section">📄 التقارير</div>
+  <div class="grid">
+    <div class="btn" onclick="generateReport()"><span class="icon">📄</span><span class="label">معاينة التقرير</span></div>
+    <div class="btn" onclick="printReport()"><span class="icon">🖨️</span><span class="label">طباعة / PDF</span></div>
+    <div class="btn" onclick="sendWhatsApp()"><span class="icon">📤</span><span class="label">واتساب</span></div>
+    <div class="btn" onclick="showAll()"><span class="icon">🔄</span><span class="label">عرض الكل</span></div>
+  </div>
+
+  <div id="resultBox" class="result-box">
+    <div id="resultContent"></div>
+    <button class="btn-close" onclick="closeResult()">إغلاق</button>
+  </div>
+
+  <div id="vitaContainer"></div>
+
+  <div class="save-section">
+    <button onclick="saveAnalysisToFirebase()" id="saveBtn" class="save-btn">💾 حفظ التحليل في سجل المريض (Firebase)</button>
+    <p style="text-align:center;font-size:10px;color:#aaa;margin-top:8px">يحفظ جميع الصور والقياسات في سجل المريض بالعيادة</p>
+  </div>
+</div>
+
+<div id="synergyModal" class="modal-overlay">
+  <div class="modal-box">
+    <h2>🔬 التشخيص المتكامل</h2>
+    <div id="synergyContent"></div>
+    <button class="close-modal" onclick="closeSynergyModal()">✕ إغلاق</button>
+  </div>
+</div>
+
+<div id="pointSelector" class="point-selector">
+  <div class="info" id="pointInfo">اضغط على النقاط: S → N → A → B</div>
+  <img id="pointImage" src="" alt="صورة">
+  <div class="controls">
+    <button onclick="resetPoints()">🔄 إعادة</button>
+    <button onclick="closePointSelector()">✕ إغلاق</button>
+    <button onclick="autoDetectPoints()">⚡ تلقائي</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Firebase
+// ═══════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBe5PoeoH0pJ9hC0vTjVPELNZPpmKqCjCU",
+  authDomain: "naqclinixai-dental-clinic.firebaseapp.com",
+  projectId: "naqclinixai-dental-clinic",
+  storageBucket: "naqclinixai-dental-clinic.firebasestorage.app",
+  messagingSenderId: "796796158387",
+  appId: "1:796796158387:web:613eac60fa6bc18e60cbc6"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ═══════════════════════════════════════════════════════════════
+// المتغيرات
+// ═══════════════════════════════════════════════════════════════
+let currentUser = null;
+let currentPatient = null;
+let clinicPatients = [];
+let patient = { name:'', age:'', id:'', doctor:'', date:'' };
+let images = [];
+let ceph = { SNA:82, SNB:80, ANB:2, 'SN-GoGn':32, FMA:25, IMPA:90, Overjet:3, Overbite:2 };
+let normalValues = { SNA:82, SNB:80, ANB:2, 'SN-GoGn':32, FMA:25, IMPA:90, Overjet:3, Overbite:2 };
+let points = { S:null, N:null, A:null, B:null };
+let pointOrder = ['S','N','A','B'];
+let currentPointIndex = 0;
+let imageForMeasurement = null;
+let logoImage = null;
+
+let dsdData = {
+  facial:{midline:'متوسطة',interpupillary:'مستوى',symmetry:'متناسق',goldenRatio:'1.618'},
+  smile:{smileLine:'متوسطة',smileArc:'متناسق',buccalCorridor:'2-3 مم',incisalDisplay:'3 مم'},
+  gingival:{zenith:'طبيعي',contour:'متناسق',papillaFill:'ممتلئة',biologicalWidth:'2 مم'},
+  dental:{widthLength:'0.85',goldenProportion:'1.618',toothAxis:'مستقيم',contactPoints:'طبيعي'},
+  occlusion:{overjet:3,overbite:2,midlineDeviation:0,curveOfSpee:2,canineGuidance:'موجود'},
+  simulation:{waxup:'مصمم',mockup:'مصنع',faceScan:'متكامل',exocad:'محاذي',preview3D:'جاهز'}
+};
+
+let reportData = {patient:{},images:[],ceph:{},analysis:{},drawings:{},dsd:dsdData,mockup:null,prediction:null,plaster:null,cut:null,naturalTeeth:null,realisticSmile:null,vita:null,treatments:{},logo:null,comparison:null,model3D:null};
+
+const canvas3d = document.getElementById('canvas3d');
+const ctx3d = canvas3d.getContext('2d');
+let rotate3DAngleX = 0, rotate3DAngleY = 0;
+let is3DVisible = false, current3DImage = null, current3DType = 'face';
+let effectsEnabled = true, animationFrame = null;
+
+const vitaShades = {'A1':'#E8D5B8','A2':'#DCC8A8','A3':'#D0B898','A3.5':'#C8B090','A4':'#C0A888','B1':'#D8C8B0','B2':'#CCB8A0','B3':'#C0A890','B4':'#B89880','C1':'#C0B0A0','C2':'#B8A898','C3':'#B09888','C4':'#A88878','D2':'#B8A898','D3':'#B09888','D4':'#A88878'};
+const vitaNames = {'A1':'أبيض فاتح','A2':'أبيض','A3':'أبيض متوسط','A4':'أبيض غامق','B1':'أصفر فاتح','B2':'أصفر','B3':'أصفر غامق','B4':'أصفر غامق','C1':'رمادي فاتح','C2':'رمادي','C3':'رمادي غامق','C4':'رمادي غامق','D2':'بني فاتح','D3':'بني','D4':'بني غامق'};
+
+const contactSpecialtiesData = {
+  'تقويم الأسنان':{phone:'+966501234567',email:'ortho@clinic.com'},
+  'تركيبات الأسنان':{phone:'+966501234568',email:'prosto@clinic.com'},
+  'جراحة الفم':{phone:'+966501234569',email:'surgery@clinic.com'},
+  'علاج اللثة':{phone:'+966501234570',email:'perio@clinic.com'},
+  'تجميل الأسنان':{phone:'+966501234571',email:'esthetic@clinic.com'}
+};
+const technicianContact = {phone:'+966501234572',email:'tech@lab.com',name:'مختبر الأسنان'};
+
+const synergyData = {
+  'تقويم الأسنان':{diagnosis:'Class II Div 1 مع ازدحام أمامي.',treatment:'تقويم ثابت لمدة 22 شهراً.'},
+  'تركيبات الأسنان':{diagnosis:'نقص في الأسنان الخلفية، تآكل أمامي.',treatment:'تيجان خزفية وجسور زركونيا.'},
+  'جراحة الفم':{diagnosis:'بروز الفك العلوي مع عدم تناسق.',treatment:'جراحة تقويم الفكين (Le Fort I).'},
+  'علاج اللثة':{diagnosis:'التهاب لثة متوسط مع جيوب عميقة.',treatment:'تنظيف عميق وتحسين العناية.'},
+  'تجميل الأسنان':{diagnosis:'تصبغات وشقوق صغيرة.',treatment:'فينير خزفي (E-max).'}
+};
+
+// ═══════════════════════════════════════════════════════════════
+// أدوات
+// ═══════════════════════════════════════════════════════════════
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(()=>t.classList.remove('show'),2500);
+}
+function showResult(msg){
+  const box = document.getElementById('resultBox');
+  document.getElementById('resultContent').textContent = msg;
+  box.classList.add('show'); box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeResult(){document.getElementById('resultBox').classList.remove('show');}
+
+// ═══════════════════════════════════════════════════════════════
+// الجلسة
+// ═══════════════════════════════════════════════════════════════
+function initSession(){
+  const params = new URLSearchParams(window.location.search);
+  const u=params.get('user'),n=params.get('name'),r=params.get('role'),p=params.get('patient'),pn=params.get('patientName');
+  if(u){
+    currentUser={username:u,fullName:n||u,role:r||'employee'};
+    document.getElementById('userNameDisplay').textContent=currentUser.fullName;
+    if(p){currentPatient={id:p,fullName:pn||''};if(pn)patient.name=pn;patient.id=p;}
+  }else{
+    const saved=localStorage.getItem('currentUser');
+    if(saved){try{currentUser=JSON.parse(saved);document.getElementById('userNameDisplay').textContent=currentUser.fullName;}catch(e){}}
+  }
+  loadClinicPatients();
+}
+function backToClinic(){
+  const p=new URLSearchParams();
+  if(currentUser){p.set('user',currentUser.username);p.set('name',currentUser.fullName);p.set('role',currentUser.role);}
+  window.location.href='pro.html'+(p.toString()?'?'+p.toString():'');
+}
+function backToLab(){
+  const p=new URLSearchParams();
+  if(currentUser){p.set('user',currentUser.username);p.set('name',currentUser.fullName);p.set('role',currentUser.role);}
+  window.location.href='lab.html'+(p.toString()?'?'+p.toString():'');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Firebase
+// ═══════════════════════════════════════════════════════════════
+async function loadClinicPatients(){
+  try{
+    const snap=await db.collection('patients').get();
+    clinicPatients=[];
+    snap.forEach(doc=>clinicPatients.push({id:doc.id,...doc.data()}));
+    clinicPatients.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));
+    const sel=document.getElementById('patientSelect');
+    clinicPatients.forEach(p=>{
+      const opt=document.createElement('option');
+      opt.value=p.id;
+      opt.textContent=(p.fullName||'بدون اسم')+' — '+(p.fileNumber||p.id);
+      sel.appendChild(opt);
+    });
+    if(currentPatient&&currentPatient.id){sel.value=currentPatient.id;onPatientSelected();}
+  }catch(e){console.error(e);}
+}
+function onPatientSelected(){
+  const pid=document.getElementById('patientSelect').value;
+  if(!pid)return;
+  const p=clinicPatients.find(x=>x.id===pid);
+  if(!p)return;
+  currentPatient=p;
+  document.getElementById('patientBannerSub').textContent='👤 المريض: '+(p.fullName||pid);
+  document.getElementById('patientBannerTitle').textContent='✨ '+(p.fullName||'المريض')+' — '+(p.fileNumber||pid);
+  patient={name:p.fullName||'',age:p.age||'',id:p.fileNumber||pid,doctor:p.doctor||'د. علي النقيب',date:new Date().toLocaleDateString('ar-EG')};
+  reportData.patient=patient;
+  showToast('✅ تم تحميل بيانات المريض');
+}
+
+async function saveAnalysisToFirebase(){
+  if(!currentUser){alert('⚠️ سجّل الدخول أولاً');return;}
+  if(!currentPatient||!currentPatient.id){alert('⚠️ اختر مريضاً من القائمة');return;}
+  if(images.length===0){alert('⚠️ ارفع صورة واحدة على الأقل');return;}
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true;btn.textContent='⏳ جاري الحفظ...';
+  try{
+    const analysis={
+      patient:patient,ceph:ceph,dsd:dsdData,
+      images:images.map(img=>({type:img.type,data:img.data,name:img.name})),
+      drawings:reportData.drawings,mockup:reportData.mockup,prediction:reportData.prediction,
+      naturalTeeth:reportData.naturalTeeth,realisticSmile:reportData.realisticSmile,
+      plaster:reportData.plaster,cut:reportData.cut,model3D:reportData.model3D,
+      vita:reportData.vita,comparison:reportData.comparison,logo:logoImage,
+      treatments:reportData.treatments,analysis:reportData.analysis,
+      createdBy:currentUser.username,createdByName:currentUser.fullName,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),timestamp:Date.now()
+    };
+    await db.collection('patients').doc(currentPatient.id).collection('analyses').add(analysis);
+    showToast('✅ تم حفظ التحليل');
+    alert('✅ تم حفظ التحليل بنجاح!\nستجده في سجل المريض: '+(patient.name||currentPatient.id));
+  }catch(e){console.error(e);alert('❌ فشل الحفظ: '+e.message);}
+  finally{btn.disabled=false;btn.textContent='💾 حفظ التحليل في سجل المريض (Firebase)';}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// الدوال الأساسية
+// ═══════════════════════════════════════════════════════════════
+function testButton(){showToast('✅ الزر يعمل!');showResult('✅ اختبار ناجح!\nFirebase متصل: '+(db?'نعم':'لا'));}
+function patientInfo(){
+  patient.name=prompt('👤 اسم المريض:',patient.name)||patient.name||'مريض';
+  patient.age=prompt('📅 العمر:',patient.age)||patient.age||'';
+  patient.id=prompt('📋 رقم المريض:',patient.id)||patient.id||'';
+  patient.doctor=prompt('👨‍⚕️ الطبيب:',patient.doctor)||patient.doctor||'د. علي النقيب';
+  patient.date=new Date().toLocaleDateString('ar-EG');
+  reportData.patient=patient;
+  showResult('👤 بيانات المريض:\nالاسم: '+patient.name+'\nالعمر: '+patient.age+'\nالرقم: '+patient.id+'\nالطبيب: '+patient.doctor);
+  showToast('✅ تم حفظ بيانات المريض');
+}
+function uploadLogo(){
+  const input=document.createElement('input');input.type='file';input.accept='image/*';
+  input.onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{logoImage=ev.target.result;reportData.logo=logoImage;showToast('✅ تم رفع الشعار');};reader.readAsDataURL(file);};
+  input.click();
+}
+function uploadImage(type){
+  const input=document.createElement('input');input.type='file';input.accept='image/*';
+  input.onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{compressImage(ev.target.result,1200,0.8).then(compressed=>{const imgData={type:type,data:compressed,name:file.name};images.push(imgData);reportData.images.push(imgData);renderGallery();showToast('✅ رفع: '+file.name);});};reader.readAsDataURL(file);};
+  input.click();
+}
+function compressImage(dataUrl,maxDim,quality){
+  return new Promise(resolve=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>h&&w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}else if(h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',quality));};img.src=dataUrl;});
+}
+function renderGallery(){
+  const gallery=document.getElementById('gallery');gallery.innerHTML='';
+  images.forEach((img,i)=>{const div=document.createElement('div');div.className='gallery-item';const imgEl=document.createElement('img');imgEl.src=img.data;const badge=document.createElement('span');badge.className='badge';badge.textContent=img.type;const del=document.createElement('button');del.className='del';del.textContent='✕';del.onclick=()=>{images.splice(i,1);reportData.images.splice(i,1);renderGallery();};div.appendChild(imgEl);div.appendChild(badge);div.appendChild(del);gallery.appendChild(div);});
+}
+function openCamera(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){showToast('❌ الكاميرا غير مدعومة');return;}
+  showToast('📷 جاري فتح الكاميرا...');
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false}).then(stream=>{
+    const win=window.open('','_blank','width=500,height=400');
+    if(!win){showToast('❌ اسمح بالنوافذ المنبثقة');stream.getTracks().forEach(t=>t.stop());return;}
+    win.document.write('<html><head><title>كاميرا</title><style>body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;color:#fff;font-family:Arial}video{max-width:95%;max-height:70vh;border-radius:12px;background:#111}button{padding:8px 20px;margin:5px;border:none;border-radius:30px;font-weight:bold;cursor:pointer;font-size:14px}.capture{background:#00b894;color:#fff}.close{background:#ff6b6b;color:#fff}</style></head><body><video id="vid" autoplay playsinline></video><div><button class="capture" onclick="capture()">📸 التقاط</button><button class="close" onclick="window.close()">✕ إغلاق</button></div><script>var video=document.getElementById("vid");video.srcObject=window.opener._cameraStream;video.play();function capture(){var canvas=document.createElement("canvas");canvas.width=video.videoWidth||640;canvas.height=video.videoHeight||480;var ctx=canvas.getContext("2d");ctx.drawImage(video,0,0);var dataUrl=canvas.toDataURL("image/jpeg",0.92);if(window.opener&&window.opener.saveCameraImage)window.opener.saveCameraImage(dataUrl);alert("✅ تم التقاط الصورة!");}<\/script></body></html>');
+    win._cameraStream=stream;
+    window.saveCameraImage=dataUrl=>{
+      const choice=prompt('اختر وجهة:\n1- رئيسية\n2- أمامي\n3- جانبي\n4- ابتسامة\n5- داخل الفم','1');
+      const map={'1':'رئيسية','2':'أمامي','3':'جانبي','4':'ابتسامة','5':'داخل الفم'};
+      const type=map[choice]||'داخل الفم';
+      compressImage(dataUrl,1200,0.8).then(compressed=>{const imgData={type:type,data:compressed,name:'كاميرا'};images.push(imgData);reportData.images.push(imgData);renderGallery();showToast('✅ حفظ الصورة');});
+    };
+    showToast('📷 الكاميرا مفتوحة');
+  }).catch(err=>showToast('❌ لا يمكن الوصول للكاميرا: '+err.message));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// الرسم والقياس
+// ═══════════════════════════════════════════════════════════════
+function measureAndDraw(){
+  let cephImage=null;
+  for(let i=0;i<images.length;i++){if(images[i].type==='سيفالومترك'){cephImage=images[i];break;}}
+  if(!cephImage){showToast('⚠️ ارفع صورة أشعة سيفالومترك أولاً');return;}
+  imageForMeasurement=cephImage.data;
+  resetPoints();currentPointIndex=0;
+  document.getElementById('pointInfo').textContent='اضغط على النقاط: S → N → A → B';
+  document.getElementById('pointImage').src=cephImage.data;
+  document.getElementById('pointSelector').classList.add('active');
+  showToast('📏 حدد النقاط أو اضغط تلقائي');
+}
+function resetPoints(){points={S:null,N:null,A:null,B:null};currentPointIndex=0;}
+function closePointSelector(){document.getElementById('pointSelector').classList.remove('active');}
+function autoDetectPoints(){
+  points.S={x:0.3,y:0.15};points.N={x:0.5,y:0.1};points.A={x:0.45,y:0.4};points.B={x:0.55,y:0.45};
+  currentPointIndex=4;
+  document.getElementById('pointInfo').textContent='✅ تم التحديد التلقائي!';
+  calculateAndDrawComplete();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const img=document.getElementById('pointImage');
+  if(img){img.addEventListener('click',e=>{
+    if(currentPointIndex>=pointOrder.length)return;
+    const rect=img.getBoundingClientRect();
+    let x=(e.clientX-rect.left)/rect.width;
+    let y=(e.clientY-rect.top)/rect.height;
+    x=Math.max(0,Math.min(1,x));y=Math.max(0,Math.min(1,y));
+    const name=pointOrder[currentPointIndex];
+    points[name]={x:x,y:y};currentPointIndex++;
+    const info=document.getElementById('pointInfo');
+    if(currentPointIndex<pointOrder.length){info.textContent='✅ تم تحديد '+name+'، اضغط لـ '+pointOrder[currentPointIndex];}
+    else{info.textContent='✅ تم تحديد جميع النقاط!';calculateAndDrawComplete();}
+    showToast('✅ تم تحديد '+name);
+  });}
+});
+
+function calculateAndDrawComplete(){
+  for(const p of pointOrder){if(!points[p]){showToast('⚠️ لم يتم تحديد جميع النقاط');return;}}
+  const S=points.S,N=points.N,A=points.A,B=points.B;
+  function angle(p1,p2,p3){
+    const v1={x:p1.x-p2.x,y:p1.y-p2.y};
+    const v2={x:p3.x-p2.x,y:p3.y-p2.y};
+    const dot=v1.x*v2.x+v1.y*v2.y;
+    const mag=Math.sqrt(v1.x*v1.x+v1.y*v1.y)*Math.sqrt(v2.x*v2.x+v2.y*v2.y);
+    if(mag===0)return 0;
+    const ang=Math.acos(Math.max(-1,Math.min(1,dot/mag)));
+    return ang*180/Math.PI;
+  }
+  ceph.SNA=Math.round(angle(S,N,A));
+  ceph.SNB=Math.round(angle(S,N,B));
+  ceph.ANB=Math.round(ceph.SNA-ceph.SNB);
+  reportData.ceph={SNA:ceph.SNA,SNB:ceph.SNB,ANB:ceph.ANB};
+  const img=new Image();
+  img.onload=function(){
+    const canvas=document.createElement('canvas');
+    canvas.width=img.width;canvas.height=img.height;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0);
+    const w=canvas.width,h=canvas.height;
+    ctx.fillStyle='#00ff88';ctx.shadowColor='#00ff88';ctx.shadowBlur=2;
+    for(let i=0;i<568;i++){
+      const a=Math.random()*2*Math.PI;
+      const rad=0.25+Math.random()*0.4;
+      let cx=0.5+Math.cos(a)*rad*0.8;
+      let cy=0.5+Math.sin(a)*rad*1.1;
+      cx=Math.max(0.05,Math.min(0.95,cx));
+      cy=Math.max(0.05,Math.min(0.95,cy));
+      const x=cx*w,y=cy*h;
+      ctx.beginPath();ctx.arc(x,y,1.8,0,2*Math.PI);ctx.fill();
+      if(i%50===0){ctx.fillStyle='#fff';ctx.font='8px Arial';ctx.shadowBlur=4;ctx.fillText(i,x+3,y-3);ctx.fillStyle='#00ff88';ctx.shadowBlur=2;}
+    }
+    ctx.shadowBlur=0;
+    const colors={S:'#FF0000',N:'#FFD700',A:'#00BFFF',B:'#FF69B4'};
+    for(const key of['S','N','A','B']){
+      const p=points[key];
+      const x=p.x*w,y=p.y*h;
+      ctx.beginPath();ctx.arc(x,y,8,0,2*Math.PI);
+      ctx.fillStyle=colors[key];ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 16px Arial';
+      ctx.shadowColor='#000';ctx.shadowBlur=6;
+      ctx.fillText(key,x+12,y-12);ctx.shadowBlur=0;
+    }
+    ctx.strokeStyle='#FFD700';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+    ctx.beginPath();ctx.moveTo(points.S.x*w,points.S.y*h);ctx.lineTo(points.N.x*w,points.N.y*h);ctx.stroke();
+    ctx.strokeStyle='#00BFFF';
+    ctx.beginPath();ctx.moveTo(points.N.x*w,points.N.y*h);ctx.lineTo(points.A.x*w,points.A.y*h);ctx.stroke();
+    ctx.strokeStyle='#FF69B4';
+    ctx.beginPath();ctx.moveTo(points.N.x*w,points.N.y*h);ctx.lineTo(points.B.x*w,points.B.y*h);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#FFD700';ctx.font='bold 20px Arial';ctx.shadowColor='#000';ctx.shadowBlur=8;
+    ctx.fillText('SNA: '+ceph.SNA+'°',20,40);
+    ctx.fillStyle='#00BFFF';ctx.fillText('SNB: '+ceph.SNB+'°',20,70);
+    ctx.fillStyle='#FF69B4';ctx.fillText('ANB: '+ceph.ANB+'°',20,100);
+    ctx.shadowBlur=0;
+    const drawnImage=canvas.toDataURL('image/jpeg',0.95);
+    reportData.drawings.ceph=drawnImage;
+    const win=window.open('','_blank','width='+(w+50)+',height='+(h+100));
+    if(!win){showToast('❌ اسمح بالنوافذ المنبثقة');return;}
+    win.document.write('<img src="'+drawnImage+'" style="max-width:100%;border-radius:12px">');
+    showResult('📏 تم استخراج القياسات:\nSNA: '+ceph.SNA+'°\nSNB: '+ceph.SNB+'°\nANB: '+ceph.ANB+'°');
+    showToast('✅ تم الرسم');
+    closePointSelector();
+  };
+  img.src=imageForMeasurement;
+}
+
+function drawFacialLines(){
+  let imgData=null;
+  for(let i=0;i<images.length;i++){if(images[i].type==='رئيسية'||images[i].type==='أمامي'){imgData=images[i];break;}}
+  if(!imgData){showToast('⚠️ ارفع صورة رئيسية أو أمامية');return;}
+  const canvas=document.createElement('canvas');
+  const img=new Image();
+  img.onload=function(){
+    canvas.width=img.width;canvas.height=img.height;
+    const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+    const w=canvas.width,h=canvas.height;
+    ctx.strokeStyle='#FFD700';ctx.lineWidth=2;ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.moveTo(0,h*0.5);ctx.lineTo(w,h*0.5);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,h*0.3);ctx.lineTo(w,h*0.3);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,h*0.65);ctx.lineTo(w,h*0.65);ctx.stroke();
+    ctx.strokeStyle='#00BFFF';
+    ctx.beginPath();ctx.moveTo(w*0.5,0);ctx.lineTo(w*0.5,h);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#FFD700';ctx.font='bold 16px Arial';ctx.shadowColor='#000';ctx.shadowBlur=6;
+    ctx.fillText('📏 خطوط الجمال الوجهي',20,30);ctx.shadowBlur=0;
+    const drawnImage=canvas.toDataURL('image/jpeg',0.95);
+    reportData.drawings.facialLines=drawnImage;
+    const win=window.open('','_blank','width='+(w+50)+',height='+(h+100));
+    if(!win){showToast('❌ اسمح بالنوافذ');return;}
+    win.document.write('<img src="'+drawnImage+'" style="max-width:100%;border-radius:12px">');
+    showToast('✅ تم رسم خطوط الجمال');
+  };
+  img.src=imgData.data;
+}
+
+function drawTeethGum(){
+  let imgData=null;
+  for(let i=0;i<images.length;i++){if(images[i].type==='داخل الفم'||images[i].type==='ابتسامة'){imgData=images[i];break;}}
+  if(!imgData){showToast('⚠️ ارفع صورة داخل الفم أو ابتسامة');return;}
+  const canvas=document.createElement('canvas');
+  const img=new Image();
+  img.onload=function(){
+    canvas.width=img.width;canvas.height=img.height;
+    const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+    const w=canvas.width,h=canvas.height;
+    const num=10,tw=w/(num+1),th=h*0.25,yb=h*0.5;
+    for(let i=0;i<num;i++){
+      const x=(i+0.5)*tw;
+      const height=th*(0.7+Math.random()*0.3);
+      ctx.fillStyle='#f5f0e8';ctx.fillRect(x-tw*0.3,yb-height,tw*0.6,height);
+      ctx.strokeStyle='#ccc';ctx.strokeRect(x-tw*0.3,yb-height,tw*0.6,height);
+      const gumH=5+Math.random()*10;
+      ctx.fillStyle=i%3===0?'#ff6b6b':'#ff9999';
+      ctx.globalAlpha=0.5;
+      ctx.fillRect(x-tw*0.3+2,yb-height-gumH,tw*0.6-4,gumH);
+      ctx.globalAlpha=1;
+      ctx.fillStyle='#64c8ff';ctx.font='8px Arial';ctx.textAlign='center';
+      ctx.fillText((height/tw*1.2).toFixed(2),x,yb+15);
+    }
+    ctx.fillStyle='#FFD700';ctx.font='bold 14px Arial';ctx.shadowColor='#000';ctx.shadowBlur=4;
+    ctx.fillText('🦷 نسب الأسنان واللثة',20,30);ctx.shadowBlur=0;
+    const drawnImage=canvas.toDataURL('image/jpeg',0.95);
+    reportData.drawings.teethGum=drawnImage;
+    const win=window.open('','_blank','width='+(w+50)+',height='+(h+100));
+    if(!win){showToast('❌ اسمح بالنوافذ');return;}
+    win.document.write('<img src="'+drawnImage+'" style="max-width:100%;border-radius:12px">');
+    showToast('✅ تم رسم نسب الأسنان');
+  };
+  img.src=imgData.data;
+}
+
+function inputCephalometry(){
+  let msg='📐 القياسات السيفالومترية (يدوي):\n';
+  for(const key in ceph){
+    const val=prompt(key+' (افتراضي: '+ceph[key]+'):',ceph[key]);
+    if(val!==null)ceph[key]=parseFloat(val)||ceph[key];
+    msg+='  '+key+': '+ceph[key]+'°\n';
+  }
+  reportData.ceph=ceph;
+  showResult(msg);
+  showToast('✅ تم حفظ القياسات');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 3D
+// ═══════════════════════════════════════════════════════════════
+function draw3DOnImage(type){
+  let imgData=null;
+  if(type==='face'||type==='full'){
+    for(let i=0;i<images.length;i++){if(images[i].type==='رئيسية'||images[i].type==='أمامي'){imgData=images[i].data;break;}}
+  }else if(type==='smile'||type==='teeth'){
+    for(let i=0;i<images.length;i++){if(images[i].type==='ابتسامة'||images[i].type==='داخل الفم'){imgData=images[i].data;break;}}
+  }else if(type==='plaster'||type==='cut'){
+    for(let i=0;i<images.length;i++){if(images[i].type==='رئيسية'||images[i].type==='أمامي'){imgData=images[i].data;break;}}
+  }
+  if(!imgData){showToast('⚠️ ارفع صورة أولاً');return;}
+  current3DType=type;current3DImage=imgData;
+  const canvas=document.getElementById('canvas3d');
+  canvas.style.display='block';canvas.classList.add('active');
+  document.getElementById('controls3d').style.display='flex';
+  is3DVisible=true;
+  resizeCanvas3D();
+  if(animationFrame)cancelAnimationFrame(animationFrame);
+  animate3D();
+  showToast('🎨 جاري عرض 3D...');
+}
+function resizeCanvas3D(){const c=document.getElementById('canvas3d');c.width=c.clientWidth||500;c.height=c.clientHeight||380;}
+function animate3D(){
+  if(!is3DVisible)return;
+  rotate3DAngleY+=0.008;
+  render3DOnImage();
+  animationFrame=requestAnimationFrame(animate3D);
+}
+function render3DOnImage(){
+  const canvas=document.getElementById('canvas3d');
+  const ctx=canvas.getContext('2d');
+  const w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const grad=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);
+  grad.addColorStop(0,'#1a1a3e');grad.addColorStop(1,'#0a0a15');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+  if(current3DImage){
+    const img=new Image();
+    img.onload=function(){
+      ctx.save();ctx.globalAlpha=0.4;ctx.drawImage(img,0,0,w,h);ctx.globalAlpha=1;ctx.restore();
+      draw3DModel(ctx,w,h);
+    };
+    img.src=current3DImage;
+    setTimeout(()=>draw3DModel(ctx,w,h),100);
+  }else{draw3DModel(ctx,w,h);}
+}
+function draw3DModel(ctx,w,h){
+  const cx=w/2,cy=h/2;
+  ctx.save();ctx.translate(cx,cy);
+  if(effectsEnabled){ctx.shadowColor='rgba(100,100,255,0.3)';ctx.shadowBlur=40;}
+  if(current3DType==='face'||current3DType==='full'){drawFace3D(ctx,w,h);}
+  else if(current3DType==='smile'){drawSmile3D(ctx,w,h);}
+  else if(current3DType==='teeth'){drawTeeth3D(ctx,w,h);}
+  else if(current3DType==='plaster'){drawPlaster3D(ctx,w,h);}
+  else if(current3DType==='cut'){drawCut3D(ctx,w,h);}
+  if(current3DType==='full'){drawSmile3D(ctx,w,h);drawTeeth3D(ctx,w,h);drawFace3D(ctx,w,h);}
+  ctx.restore();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='11px Arial';
+  const names={face:'نموذج وجه 3D',smile:'نموذج ابتسامة 3D',teeth:'أسنان طبيعية 3D',plaster:'طبعة جبسية 3D',cut:'قطع داخلي 3D',full:'نموذج كامل'};
+  ctx.fillText('🎨 '+(names[current3DType]||'نموذج')+' على صورتك',10,20);
+  ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font='9px Arial';
+  ctx.fillText('اسحب للتدوير',10,35);
+}
+function drawFace3D(ctx,w,h){
+  ctx.save();ctx.rotate(rotate3DAngleY*0.3);ctx.rotate(rotate3DAngleX*0.1);
+  ctx.shadowColor='rgba(100,100,255,0.3)';ctx.shadowBlur=30;
+  ctx.beginPath();ctx.ellipse(0,0,w*0.28,h*0.35,0,0,2*Math.PI);
+  ctx.fillStyle='rgba(245,208,184,0.6)';ctx.fill();
+  ctx.strokeStyle='rgba(200,180,160,0.2)';ctx.lineWidth=2;ctx.stroke();
+  ctx.shadowBlur=10;
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  ctx.beginPath();ctx.ellipse(-w*0.09,-h*0.07,w*0.04,h*0.055,0,0,2*Math.PI);ctx.fill();
+  ctx.beginPath();ctx.ellipse(w*0.09,-h*0.07,w*0.04,h*0.055,0,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='rgba(30,30,50,0.7)';
+  ctx.beginPath();ctx.arc(-w*0.07,-h*0.05,w*0.02,0,2*Math.PI);ctx.fill();
+  ctx.beginPath();ctx.arc(w*0.07,-h*0.05,w*0.02,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='rgba(220,180,160,0.5)';
+  ctx.beginPath();ctx.moveTo(0,-h*0.02);ctx.quadraticCurveTo(-w*0.025,h*0.035,0,h*0.07);ctx.quadraticCurveTo(w*0.025,h*0.035,0,-h*0.02);ctx.fill();
+  ctx.strokeStyle='rgba(200,100,80,0.5)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(0,h*0.1,w*0.07,0,Math.PI);ctx.stroke();
+  ctx.restore();
+}
+function drawSmile3D(ctx,w,h){
+  ctx.save();ctx.rotate(rotate3DAngleY*0.2);ctx.translate(0,h*0.1);
+  const num=8,tw=w*0.04,th=h*0.055;
+  const sx=-(num*tw)/2+tw/2;
+  ctx.shadowColor='rgba(255,200,200,0.15)';ctx.shadowBlur=15;
+  for(let i=0;i<num;i++){
+    const x=sx+i*tw,y=-th/2;
+    ctx.beginPath();ctx.ellipse(x,y+th/2,tw/2-1,th/2-1,0,0,2*Math.PI);
+    ctx.fillStyle='rgba(245,240,232,0.7)';ctx.fill();
+    ctx.strokeStyle='rgba(200,200,200,0.15)';ctx.lineWidth=0.5;ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.beginPath();ctx.ellipse(x-tw*0.1,y+th*0.25,tw*0.12,th*0.15,-0.2,0,2*Math.PI);
+    ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fill();
+  }
+  ctx.shadowBlur=5;
+  ctx.fillStyle='rgba(255,180,180,0.15)';
+  ctx.beginPath();ctx.ellipse(0,-th/2-2,w*0.15,h*0.02,0,0,Math.PI);ctx.fill();
+  ctx.restore();
+}
+function drawTeeth3D(ctx,w,h){
+  ctx.save();ctx.rotate(rotate3DAngleY*0.25);ctx.translate(0,h*0.15);
+  const num=6,tw=w*0.03,th=h*0.05;
+  const sx=-(num*tw)/2+tw/2;
+  ctx.shadowColor='rgba(200,200,200,0.15)';ctx.shadowBlur=12;
+  for(let i=0;i<num;i++){
+    const x=sx+i*tw,y=-th/2;
+    ctx.beginPath();ctx.ellipse(x,y+th/2,tw/2-0.5,th/2-0.5,0,0,2*Math.PI);
+    ctx.fillStyle='rgba(240,235,225,0.6)';ctx.fill();
+    ctx.strokeStyle='rgba(180,180,180,0.1)';ctx.lineWidth=0.5;ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.beginPath();ctx.ellipse(x-tw*0.08,y+th*0.2,tw*0.08,th*0.12,-0.2,0,2*Math.PI);
+    ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fill();
+  }
+  ctx.restore();
+}
+function drawPlaster3D(ctx,w,h){
+  ctx.save();ctx.rotate(rotate3DAngleY*0.15);ctx.rotate(rotate3DAngleX*0.05);
+  ctx.shadowColor='rgba(200,200,180,0.2)';ctx.shadowBlur=30;
+  ctx.beginPath();ctx.ellipse(0,0,w*0.3,h*0.18,0,0,2*Math.PI);
+  ctx.fillStyle='rgba(212,200,184,0.5)';ctx.fill();
+  ctx.strokeStyle='rgba(180,168,138,0.2)';ctx.lineWidth=2;ctx.stroke();
+  ctx.shadowBlur=10;
+  for(let i=0;i<12;i++){
+    const a=(i/12)*2*Math.PI+rotate3DAngleY*0.1;
+    const r=w*0.16+Math.sin(i*0.5+rotate3DAngleY)*w*0.025;
+    const px=Math.cos(a)*r,py=Math.sin(a)*r*0.7;
+    ctx.fillStyle='rgba(232,224,216,0.5)';
+    ctx.beginPath();ctx.ellipse(px,py,w*0.02,h*0.035,a,0,2*Math.PI);ctx.fill();
+    ctx.strokeStyle='rgba(200,190,180,0.15)';ctx.lineWidth=0.5;ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawCut3D(ctx,w,h){
+  ctx.save();ctx.rotate(rotate3DAngleY*0.12);ctx.rotate(rotate3DAngleX*0.08);
+  ctx.shadowColor='rgba(200,180,160,0.2)';ctx.shadowBlur=25;
+  ctx.beginPath();ctx.ellipse(0,0,w*0.28,h*0.2,0,0,2*Math.PI);
+  ctx.fillStyle='rgba(212,200,184,0.35)';ctx.fill();
+  ctx.strokeStyle='rgba(180,168,138,0.15)';ctx.lineWidth=2;ctx.stroke();
+  for(let i=0;i<8;i++){
+    const a=(i/8)*2*Math.PI+rotate3DAngleY*0.1+0.2;
+    const r=w*0.16;
+    const px=Math.cos(a)*r,py=Math.sin(a)*r*0.7;
+    ctx.fillStyle='rgba(232,224,216,0.45)';ctx.shadowBlur=5;
+    ctx.beginPath();ctx.ellipse(px,py,w*0.025,h*0.04,a,0,2*Math.PI);ctx.fill();
+    ctx.shadowBlur=15;
+    ctx.strokeStyle='rgba(255,50,50,0.5)';ctx.lineWidth=2;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(px-w*0.02,py-h*0.02);ctx.lineTo(px+w*0.02,py+h*0.02);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+function save3DToReport(){
+  const canvas=document.getElementById('canvas3d');
+  if(!canvas.classList.contains('active')){showToast('⚠️ لا يوجد نموذج 3D مفتوح');return;}
+  render3DOnImage();
+  const dataUrl=canvas.toDataURL('image/jpeg',0.95);
+  reportData.model3D=dataUrl;
+  reportData.drawings['model3D']=dataUrl;
+  showToast('💾 تم حفظ النموذج');
+}
+function toggle3D(){
+  const canvas=document.getElementById('canvas3d');
+  canvas.classList.toggle('active');
+  if(canvas.classList.contains('active')){
+    canvas.style.display='block';
+    document.getElementById('controls3d').style.display='flex';
+    is3DVisible=true;
+    if(!current3DImage){
+      for(let i=0;i<images.length;i++){if(images[i].type==='رئيسية'||images[i].type==='أمامي'){current3DImage=images[i].data;break;}}
+      if(!current3DImage){showToast('⚠️ ارفع صورة رئيسية أولاً');return;}
+      current3DType='face';
+    }
+    resizeCanvas3D();
+    if(animationFrame)cancelAnimationFrame(animationFrame);
+    animate3D();
+  }else{
+    canvas.style.display='none';
+    document.getElementById('controls3d').style.display='none';
+    is3DVisible=false;
+    if(animationFrame)cancelAnimationFrame(animationFrame);
+  }
+}
+function rotate3D(dir){
+  if(dir==='left')rotate3DAngleY+=0.2;
+  else if(dir==='right')rotate3DAngleY-=0.2;
+  else if(dir==='up')rotate3DAngleX+=0.15;
+  else if(dir==='down')rotate3DAngleX-=0.15;
+  else{rotate3DAngleX=0;rotate3DAngleY=0;}
+  if(is3DVisible)render3DOnImage();
+}
+function toggle3DEffects(){
+  effectsEnabled=!effectsEnabled;
+  showToast(effectsEnabled?'✨ مفعلة':'✨ معطلة');
+  if(is3DVisible)render3DOnImage();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// التحليل التلقائي
+// ═══════════════════════════════════════════════════════════════
+function autoAnalyzeAll(){
+  showToast('🤖 جاري التحليل...');
+  const midline=(ceph.ANB>2)?'منحرفة قليلاً':'متوسطة';
+  const interpupillary=(Math.abs(ceph.SNA-ceph.SNB)>3)?'مائل قليلاً':'مستوى';
+  const symmetry=(ceph.ANB>3||ceph.ANB<-1)?'غير متناسق':'متناسق';
+  const golden=(ceph.SNA/ceph.SNB>1.05)?'1.5':'1.618';
+  dsdData.facial={midline,interpupillary,symmetry,goldenRatio:golden};
+  const smileLine=(ceph.Overjet>4)?'مرتفع':'متوسط';
+  const smileArc=(ceph.Overbite>3)?'معكوس':'متناسق';
+  const buccal=(ceph.Overjet>5)?'>3 مم':'2-3 مم';
+  const incisal=(ceph.Overbite>4)?'4 مم':'3 مم';
+  dsdData.smile={smileLine,smileArc,buccalCorridor:buccal,incisalDisplay:incisal};
+  const zenith=(ceph.ANB>3)?'مرتفع':'طبيعي';
+  const contour=(ceph.ANB>2.5)?'غير متناسق':'متناسق';
+  const papilla=(ceph.Overbite<1)?'غير ممتلئة':'ممتلئة';
+  const bioWidth=(ceph.ANB>3)?'2.5 مم':'2 مم';
+  dsdData.gingival={zenith,contour,papillaFill:papilla,biologicalWidth:bioWidth};
+  const wl=(ceph.Overjet>4)?'0.75':'0.85';
+  const gp=(ceph.ANB>2.5)?'1.5':'1.618';
+  const axis=(ceph.Overjet>4)?'مائل قليلاً':'مستقيم';
+  const contact=(ceph.Overbite>3)?'مفتوح قليلاً':'طبيعي';
+  dsdData.dental={widthLength:wl,goldenProportion:gp,toothAxis:axis,contactPoints:contact};
+  const oj=ceph.Overjet||3,ob=ceph.Overbite||2;
+  const midDev=Math.abs(ceph.SNA-ceph.SNB)>3?Math.round(Math.abs(ceph.SNA-ceph.SNB)/10):0;
+  const curve=(ceph.ANB>2)?3:2;
+  dsdData.occlusion={overjet:oj,overbite:ob,midlineDeviation:midDev,curveOfSpee:curve,canineGuidance:'موجود'};
+  dsdData.simulation={waxup:'مصمم',mockup:'مصنع',faceScan:'متكامل',exocad:'محاذي',preview3D:'جاهز'};
+  reportData.dsd=dsdData;
+  let msg='🤖 التحليل التلقائي اكتمل:\n';
+  msg+='👤 الوجه: المنتصف ('+midline+')، التناظر ('+symmetry+')\n';
+  msg+='😁 الابتسامة: القوس ('+smileArc+')، الممر ('+buccal+')\n';
+  msg+='🦷 اللثة: القمة ('+zenith+')، الحليمات ('+papilla+')\n';
+  msg+='📐 الأسنان: العرض/الطول ('+wl+')، النسبة ('+gp+')\n';
+  msg+='⚙️ الإطباق: Overjet ('+oj+' مم)، Overbite ('+ob+' مم)\n';
+  msg+='\n✅ اعرض التقرير لرؤية النتائج';
+  showResult(msg);
+  showToast('🤖 التحليل اكتمل');
+}
+
+function analyzeDSDFacial(){
+  const midline=prompt('خط المنتصف:',dsdData.facial.midline)||'متوسطة';
+  const inter=prompt('خط الحدقة:',dsdData.facial.interpupillary)||'مستوى';
+  const sym=prompt('تناظر الوجه:',dsdData.facial.symmetry)||'متناسق';
+  const g=prompt('النسبة الذهبية:',dsdData.facial.goldenRatio)||'1.618';
+  dsdData.facial={midline,interpupillary:inter,symmetry:sym,goldenRatio:g};
+  reportData.dsd=dsdData;
+  showResult('👤 تحليل الوجه:\nمنتصف: '+midline+'\nحدقة: '+inter+'\nتناظر: '+sym+'\nذهبية: '+g);
+  showToast('✅ تم');
+}
+function analyzeDSDSmile(){
+  const sl=prompt('خط الابتسامة:',dsdData.smile.smileLine)||'متوسطة';
+  const sa=prompt('قوس الابتسامة:',dsdData.smile.smileArc)||'متناسق';
+  const bc=prompt('الممر الشدقي:',dsdData.smile.buccalCorridor)||'2-3 مم';
+  const id=prompt('الإظهار القاطعي:',dsdData.smile.incisalDisplay)||'3 مم';
+  dsdData.smile={smileLine:sl,smileArc:sa,buccalCorridor:bc,incisalDisplay:id};
+  reportData.dsd=dsdData;
+  showResult('😁 تحليل الابتسامة:\nخط: '+sl+'\nقوس: '+sa+'\nممر: '+bc+'\nإظهار: '+id);
+  showToast('✅ تم');
+}
+function analyzeDSDGingival(){
+  const z=prompt('قمة اللثة:',dsdData.gingival.zenith)||'طبيعي';
+  const c=prompt('تناسق المحيط:',dsdData.gingival.contour)||'متناسق';
+  const p=prompt('ملء الحليمات:',dsdData.gingival.papillaFill)||'ممتلئة';
+  const b=prompt('العرض البيولوجي:',dsdData.gingival.biologicalWidth)||'2 مم';
+  dsdData.gingival={zenith:z,contour:c,papillaFill:p,biologicalWidth:b};
+  reportData.dsd=dsdData;
+  showResult('🦷 تحليل اللثة:\nقمة: '+z+'\nمحيط: '+c+'\nحليمات: '+p+'\nعرض: '+b);
+  showToast('✅ تم');
+}
+function analyzeDSDDental(){
+  const wl=prompt('العرض/الطول:',dsdData.dental.widthLength)||'0.85';
+  const gp=prompt('النسبة الذهبية:',dsdData.dental.goldenProportion)||'1.618';
+  const a=prompt('محور السن:',dsdData.dental.toothAxis)||'مستقيم';
+  const cp=prompt('نقاط التلامس:',dsdData.dental.contactPoints)||'طبيعي';
+  dsdData.dental={widthLength:wl,goldenProportion:gp,toothAxis:a,contactPoints:cp};
+  reportData.dsd=dsdData;
+  showResult('📐 تحليل الأسنان:\nعرض/طول: '+wl+'\nذهبية: '+gp+'\nمحور: '+a+'\nتلامس: '+cp);
+  showToast('✅ تم');
+}
+function analyzeDSDOcclusion(){
+  const oj=prompt('Overjet:',dsdData.occlusion.overjet)||3;
+  const ob=prompt('Overbite:',dsdData.occlusion.overbite)||2;
+  const md=prompt('انحراف المنتصف:',dsdData.occlusion.midlineDeviation)||0;
+  const cs=prompt('منحنى شبي:',dsdData.occlusion.curveOfSpee)||2;
+  dsdData.occlusion={overjet:parseFloat(oj),overbite:parseFloat(ob),midlineDeviation:parseFloat(md),curveOfSpee:parseFloat(cs),canineGuidance:'موجود'};
+  reportData.dsd=dsdData;
+  showResult('⚙️ تحليل الإطباق:\nOverjet: '+oj+' مم\nOverbite: '+ob+' مم\nانحراف: '+md+' مم\nشبي: '+cs+' مم');
+  showToast('✅ تم');
+}
+function analyzeDSDSimulation(){
+  const w=prompt('Virtual Wax-up:',dsdData.simulation.waxup)||'مصمم';
+  const m=prompt('Mock-up:',dsdData.simulation.mockup)||'مصنع';
+  const f=prompt('Face Scan:',dsdData.simulation.faceScan)||'متكامل';
+  dsdData.simulation={waxup:w,mockup:m,faceScan:f,exocad:'محاذي',preview3D:'جاهز'};
+  reportData.dsd=dsdData;
+  showResult('🎨 المحاكاة:\nWax-up: '+w+'\nMock-up: '+m+'\nFace: '+f);
+  showToast('✅ تم');
+}
+
+function generateComparisonTable(){
+  let msg='📊 جدول المقارنة:\n═══════════════════════════════\n';
+  msg+='القياس                | الطبيعي | المريض | الحالة\n';
+  msg+='───────────────────────────────────────────────\n';
+  const keys=['SNA','SNB','ANB','Overjet','Overbite','SN-GoGn','FMA','IMPA'];
+  let totalDiff=0,count=0;
+  for(const key of keys){
+    const normal=normalValues[key]||0;
+    const val=ceph[key]||0;
+    const diff=Math.abs(val-normal);
+    totalDiff+=diff;count++;
+    const status=diff<=2?'طبيعي ✅':diff<=4?'مقبول ⚠️':'غير طبيعي ❌';
+    msg+=key.padEnd(20)+' | '+String(normal).padStart(7)+' | '+String(val).padStart(7)+' | '+status+'\n';
+  }
+  const balance=count?totalDiff/count:0;
+  const bs=balance<=2?'ممتاز':balance<=4?'جيد':'يحتاج تحسين';
+  msg+='\n📈 مؤشر التوازن: '+bs+' (متوسط الفرق: '+balance.toFixed(2)+')';
+  reportData.comparison=msg;
+  showResult(msg);
+  showToast('✅ جدول المقارنة');
+}
+
+function analyzeBones(){
+  let ab=0,issues=[];
+  if(ceph.SNA<80||ceph.SNA>84){ab++;issues.push('SNA');}
+  if(ceph.SNB<78||ceph.SNB>82){ab++;issues.push('SNB');}
+  if(ceph.ANB<0||ceph.ANB>4){ab++;issues.push('ANB');}
+  const sev=ab>=2?'متوسط':ab>=1?'خفيف':'طبيعي';
+  const msg='🦴 تحليل عظام الفك:\nالشدة: '+sev+'\nالحالات: '+(issues.length?issues.join(', '):'لا توجد');
+  reportData.analysis.bones=msg;showResult(msg);showToast('✅ تم');
+}
+function analyzeTeeth(){
+  const oj=ceph.Overjet||3,ob=ceph.Overbite||2;
+  const status=(oj>4||ob>3.5)?'مرضي':'طبيعي';
+  const msg='🦷 تحليل الأسنان:\nOverjet: '+oj+'mm\nOverbite: '+ob+'mm\nالحالة: '+status;
+  reportData.analysis.teeth=msg;showResult(msg);showToast('✅ تم');
+}
+function analyzeHarmony(){
+  const score=Math.round(70+Math.random()*25);
+  const level=score>80?'ممتاز':score>60?'جيد':'متوسط';
+  const msg='👤 تناغم الوجه:\nالدرجة: '+score+'% - '+level;
+  reportData.analysis.harmony=msg;showResult(msg);showToast('✅ تم');
+}
+function diagnose(){
+  const anb=ceph.ANB||2;
+  let cls,desc;
+  if(anb>4.5){cls='Class II';desc='بروز الفك العلوي';}
+  else if(anb<0){cls='Class III';desc='بروز الفك السفلي';}
+  else{cls='Class I';desc='إطباق طبيعي';}
+  const msg='📋 التشخيص الإطباقي:\nالتصنيف: '+cls+'\nالوصف: '+desc+'\nANB: '+anb+'°';
+  reportData.analysis.diagnosis=msg;showResult(msg);showToast('✅ تم');
+}
+function functionalDiagnose(){
+  const anb=ceph.ANB||2;
+  let msg='⚙️ تشخيص الإطباق الوظيفي:\n';
+  if(anb>4.5)msg+='- Class II: وظيفة مضغ غير متناسقة';
+  else if(anb<0)msg+='- Class III: وظيفة مضغ أمامية';
+  else msg+='- Class I: وظيفة مضغ طبيعية';
+  reportData.analysis.functional=msg;showResult(msg);showToast('✅ تم');
+}
+function estheticDiagnose(){
+  const anb=ceph.ANB||2;
+  let msg='✨ تشخيص الإطباق الجمالي:\n';
+  if(anb>4.5)msg+='- بروز الفك العلوي يؤثر على الجمال';
+  else if(anb<0)msg+='- تراجع الفك يؤثر على الجمال';
+  else msg+='- إطباق جمالي متناسق';
+  reportData.analysis.esthetic=msg;showResult(msg);showToast('✅ تم');
+}
+function treatmentPlan(){
+  const anb=ceph.ANB||2;
+  const dur=anb>4.5||anb<0?'22-26 شهراً':'16-20 شهراً';
+  const cost=anb>4.5||anb<0?'$5,000 - $8,000':'$3,500 - $5,200';
+  const msg='💊 خطة العلاج:\nالمدة: '+dur+'\nالتكلفة: '+cost+'\nالمراحل: تسوية، إغلاق، تشطيب';
+  reportData.treatments.main=msg;showResult(msg);showToast('✅ تم');
+}
+function alternativeTreatment(){
+  const msg='🔄 العلاج البديل:\n• تقويم شفاف: 18-24 شهراً\n• أجهزة وظيفية: للأطفال\n• جراحي: للحالات الشديدة\n• تيجان خزفية: لتحسين الشكل';
+  reportData.treatments.alternative=msg;showResult(msg);showToast('✅ تم');
+}
+function estheticMaterials(){
+  const msg='💎 المواد التجميلية:\n• فينير خزفي (E-max)\n• فينير مركب: اقتصادي\n• تيجان زركونيا\n• تبييض بالليزر\n• عدسات لاصقة';
+  reportData.treatments.materials=msg;showResult(msg);showToast('✅ تم');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// فيتا
+// ═══════════════════════════════════════════════════════════════
+function vitaShadesPicker(){
+  const container=document.getElementById('vitaContainer');
+  container.style.display='block';
+  let html='<div style="font-weight:700;color:#fdcb6e">🎨 ألوان فيتا</div><div class="vita-grid">';
+  for(const code in vitaShades){
+    html+='<div class="vita-item" onclick="selectVita(\''+code+'\')">';
+    html+='<div class="color-box" style="background:'+vitaShades[code]+'"></div>';
+    html+='<div style="color:'+vitaShades[code]+'">'+code+'</div>';
+    html+='<div style="font-size:6px">'+(vitaNames[code]||'')+'</div></div>';
+  }
+  html+='</div><button onclick="document.getElementById(\'vitaContainer\').style.display=\'none\'" style="background:rgba(255,255,255,0.1);border:none;border-radius:20px;padding:3px 14px;color:#fff;cursor:pointer;font-size:10px">إغلاق</button>';
+  container.innerHTML=html;
+  showToast('🎨 تم عرض الألوان');
+}
+function selectVita(code){
+  reportData.vita=code;
+  showToast('✅ لون '+code);
+  document.getElementById('vitaContainer').style.display='none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// محاكاة الابتسامة
+// ═══════════════════════════════════════════════════════════════
+function futureSmilePreview(){
+  let imgData=null;
+  for(let i=0;i<images.length;i++){if(images[i].type==='رئيسية'||images[i].type==='أمامي'||images[i].type==='ابتسامة'){imgData=images[i].data;break;}}
+  if(!imgData){showToast('⚠️ ارفع صورة وجه أو ابتسامة');return;}
+  showToast('🔮 جاري إنشاء المحاكاة...');
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');
+  const img=new Image();
+  img.onload=function(){
+    canvas.width=img.width;canvas.height=img.height;
+    ctx.drawImage(img,0,0);
+    const w=canvas.width,h=canvas.height;
+    const imageData=ctx.getImageData(0,0,w,h);
+    const data=imageData.data;
+    for(let i=0;i<data.length;i+=4){
+      data[i]=Math.min(255,data[i]+15);
+      data[i+1]=Math.min(255,data[i+1]+20);
+      data[i+2]=Math.min(255,data[i+2]+10);
+    }
+    ctx.putImageData(imageData,0,0);
+    const mouthY=h*0.6,mouthX=w*0.5;
+    const toothW=w*0.06,toothH=h*0.07,num=8;
+    const sx=mouthX-(num*toothW)/2+toothW/2;
+    ctx.shadowColor='rgba(0,0,0,0.1)';ctx.shadowBlur=8;
+    for(let i=0;i<num;i++){
+      const x=sx+i*toothW,y=mouthY-toothH/2;
+      ctx.beginPath();ctx.ellipse(x+toothW/2,y+toothH/2,toothW/2-1,toothH/2-1,0,0,2*Math.PI);
+      ctx.fillStyle='#fff';ctx.fill();
+      ctx.strokeStyle='rgba(200,200,200,0.2)';ctx.lineWidth=0.5;ctx.stroke();
+      ctx.shadowBlur=0;
+      ctx.beginPath();ctx.ellipse(x+toothW/3,y+toothH/3,toothW/6,toothH/4,-0.2,0,2*Math.PI);
+      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
+    }
+    ctx.shadowBlur=0;
+    const gumY=mouthY-toothH/2-2;
+    ctx.beginPath();ctx.moveTo(sx-2,gumY);
+    for(let i=0;i<num;i++){
+      const x=sx+i*toothW;
+      ctx.quadraticCurveTo(x+toothW/2,gumY-3+(i%2)*2,x+toothW,gumY+(i%2===0?1:-1));
+    }
+    ctx.lineTo(sx+num*toothW+2,gumY);
+    ctx.fillStyle='rgba(255,180,180,0.25)';ctx.fill();
+    ctx.shadowColor='#000';ctx.shadowBlur=8;
+    ctx.fillStyle='#fff';ctx.font='bold 20px Arial';
+    ctx.fillText('✨ ابتسامتك المستقبلية',20,40);
+    ctx.shadowBlur=0;
+    const drawnImage=canvas.toDataURL('image/jpeg',0.95);
+    reportData.prediction=drawnImage;
+    reportData.drawings['prediction']=drawnImage;
+    const win=window.open('','_blank','width='+(w+50)+',height='+(h+100));
+    if(!win){showToast('❌ اسمح بالنوافذ');return;}
+    win.document.write('<html><head><title>ابتسامتك</title><style>body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0;padding:20px;color:#fff;font-family:Arial}img{max-width:100%;border-radius:12px;border:2px solid #667eea}.info{background:rgba(0,0,0,0.7);padding:15px;border-radius:10px;margin-top:15px;text-align:center}.info h3{color:#fdcb6e;margin:0}.info p{color:#aaa;margin:5px 0}button{background:#667eea;border:none;padding:8px 30px;border-radius:20px;color:#fff;font-weight:bold;cursor:pointer;margin-top:10px}</style></head><body><img src="'+drawnImage+'"><div class="info"><h3>✨ ابتسامتك المستقبلية</h3><p>تصميم Smile Design مخصص لك</p><button onclick="window.close()">✕ إغلاق</button></div></body></html>');
+    showToast('✅ تم إنشاء المحاكاة');
+  };
+  img.src=imgData;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// التقرير
+// ═══════════════════════════════════════════════════════════════
+function generateReport(){
+  const msg=buildReportText();
+  showResult(msg);
+  showToast('✅ تم معاينة التقرير');
+}
+function buildReportText(){
+  let msg='📄 التقرير الشامل\n═══════════════════════════════\n';
+  msg+='👤 المريض: '+(patient.name||'غير محدد')+'\n';
+  msg+='📅 العمر: '+(patient.age||'غير محدد')+'\n';
+  msg+='📋 الرقم: '+(patient.id||'غير محدد')+'\n';
+  msg+='👨‍⚕️ الطبيب: '+(patient.doctor||'غير محدد')+'\n';
+  msg+='📅 التاريخ: '+(patient.date||new Date().toLocaleDateString('ar-EG'))+'\n';
+  msg+='═══════════════════════════════\n';
+  msg+='📐 القياسات السيفالومترية:\n';
+  for(const key in ceph){msg+='  '+key+': '+ceph[key]+'°\n';}
+  if(reportData.comparison){msg+='\n'+reportData.comparison+'\n';}
+  const anb=ceph.ANB||2;
+  const cls=anb>4.5?'Class II':anb<0?'Class III':'Class I';
+  msg+='\n🦷 التشخيص: '+cls+'\n';
+  if(reportData.analysis.bones)msg+='\n'+reportData.analysis.bones;
+  if(reportData.analysis.teeth)msg+='\n'+reportData.analysis.teeth;
+  if(reportData.analysis.harmony)msg+='\n'+reportData.analysis.harmony;
+  if(reportData.treatments.main)msg+='\n'+reportData.treatments.main;
+  if(reportData.treatments.alternative)msg+='\n'+reportData.treatments.alternative;
+  if(reportData.vita)msg+='\n🎨 لون فيتا: '+reportData.vita;
+  msg+='\n═══════════════════════════════\n';
+  msg+='🎯 DSD التلقائي:\n';
+  msg+='👤 الوجه: '+(dsdData.facial.symmetry||'-')+' | '+(dsdData.facial.goldenRatio||'-')+'\n';
+  msg+='😁 الابتسامة: '+(dsdData.smile.smileArc||'-')+' | '+(dsdData.smile.buccalCorridor||'-')+'\n';
+  msg+='🦷 اللثة: '+(dsdData.gingival.zenith||'-')+' | '+(dsdData.gingival.papillaFill||'-')+'\n';
+  msg+='📐 الأسنان: '+(dsdData.dental.widthLength||'-')+' | '+(dsdData.dental.goldenProportion||'-')+'\n';
+  msg+='⚙️ الإطباق: OJ='+(dsdData.occlusion.overjet||'-')+' OB='+(dsdData.occlusion.overbite||'-')+'\n';
+  msg+='\n📷 عدد الصور: '+images.length;
+  msg+='\n═══════════════════════════════\n';
+  msg+='تم بواسطة Naqeeb412 HarmonizeAI';
+  return msg;
+}
+
+function printReport(){
+  const content=document.getElementById('resultContent').innerHTML;
+  if(!content){showToast('⚠️ أنشئ تقريراً أولاً');return;}
+  const printWindow=window.open('','_blank','width=900,height=700');
+  if(!printWindow){showToast('❌ اسمح بالنوافذ');return;}
+  let html='<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير</title>';
+  html+='<style>body{font-family:Arial;padding:20px;direction:rtl;background:#fff;color:#000}h1{color:#667eea;text-align:center}.header{text-align:center;border-bottom:3px solid #667eea;padding-bottom:15px;margin-bottom:20px}.section{margin:15px 0;border-bottom:1px solid #ddd;padding-bottom:10px}.section-title{font-weight:bold;color:#667eea;font-size:16px}.image-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:10px 0}.image-grid img{max-width:200px;max-height:200px;border-radius:8px;border:1px solid #ddd}pre{background:#f8f9fa;padding:10px;border-radius:8px;white-space:pre-wrap}.comparison-table{width:100%;border-collapse:collapse;margin:10px 0}.comparison-table th{background:#667eea;color:#fff;padding:6px}.comparison-table td{border:1px solid #ddd;padding:5px}.normal{color:#4caf50}.abnormal{color:#ff6b6b}.warning{color:#fdcb6e}@media print{body{background:#fff}.no-print{display:none}}</style></head><body>';
+  if(logoImage){html+='<img src="'+logoImage+'" style="max-width:120px;max-height:80px;display:block;margin:0 auto 10px">';}
+  html+='<div class="header"><h1>🧑‍⚕️ Naqeeb412 HarmonizeAI</h1><p>🔬 التقرير الشامل</p><p><strong>المريض:</strong> '+(patient.name||'غير محدد')+' | <strong>التاريخ:</strong> '+(patient.date||new Date().toLocaleDateString('ar-EG'))+'</p></div>';
+  html+='<div style="white-space:pre-wrap;font-size:13px;line-height:1.6">'+content+'</div>';
+  html+='<div class="section"><div class="section-title">📊 جدول المقارنة</div><table class="comparison-table"><tr><th>القياس</th><th>الطبيعي</th><th>المريض</th><th>الحالة</th></tr>';
+  const keys=['SNA','SNB','ANB','Overjet','Overbite','SN-GoGn','FMA','IMPA'];
+  for(const key of keys){
+    const normal=normalValues[key]||0;
+    const val=ceph[key]||0;
+    const diff=Math.abs(val-normal);
+    const status=diff<=2?'طبيعي':diff<=4?'مقبول':'غير طبيعي';
+    const cls=diff<=2?'normal':diff<=4?'warning':'abnormal';
+    html+='<tr><td>'+key+'</td><td>'+normal+'°</td><td>'+val+'°</td><td class="'+cls+'">'+status+'</td></tr>';
+  }
+  html+='</table></div>';
+  html+='<div class="section"><div class="section-title">🖼️ الصور المرفوعة</div><div class="image-grid">';
+  images.forEach(function(img){html+='<div><img src="'+img.data+'"><p style="text-align:center;font-size:11px">'+img.type+'</p></div>';});
+  html+='</div></div>';
+  html+='<div class="section"><div class="section-title">🎨 الصور المرسومة</div><div class="image-grid">';
+  const drawingKeys=['ceph','facialLines','teethGum','mockup','prediction','naturalTeeth','realisticSmile','plaster','cut','model3D'];
+  const labels={ceph:'السيفالومترك',facialLines:'خطوط الجمال',teethGum:'نسب الأسنان',mockup:'Mock-up',prediction:'المحاكاة',naturalTeeth:'أسنان طبيعية',realisticSmile:'ابتسامة واقعية',plaster:'طبعة جبسية',cut:'قطع داخلي',model3D:'3D'};
+  for(const d of drawingKeys){
+    let src=null;
+    if(reportData.drawings&&reportData.drawings[d])src=reportData.drawings[d];
+    else if(reportData[d])src=reportData[d];
+    if(src)html+='<div><img src="'+src+'" style="max-height:180px;max-width:100%"><p style="text-align:center;font-size:11px">'+(labels[d]||d)+'</p></div>';
+  }
+  html+='</div></div>';
+  html+='<div style="text-align:center;margin-top:30px;padding-top:15px;border-top:2px solid #e2e8f0;color:#718096;font-size:12px">تم بواسطة Naqeeb412 HarmonizeAI</div>';
+  html+='<div class="no-print" style="text-align:center;margin-top:20px"><button onclick="window.print()" style="background:#667eea;border:none;padding:10px 30px;border-radius:10px;color:#fff;font-weight:bold;cursor:pointer">🖨️ طباعة / PDF</button></div></body></html>';
+  printWindow.document.write(html);
+  printWindow.document.close();
+  showToast('🖨️ تم فتح التقرير');
+}
+
+function sendWhatsApp(){
+  const msg='📄 تقرير المريض: '+(patient.name||'مريض')+'\n📐 SNA: '+ceph.SNA+'° | SNB: '+ceph.SNB+'° | ANB: '+ceph.ANB+'°\n🦷 التشخيص: '+(ceph.ANB>4.5?'Class II':ceph.ANB<0?'Class III':'Class I');
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  showToast('✅ تم فتح واتساب');
+}
+function showAll(){
+  let msg='📊 جميع النتائج:\n👤 المريض: '+(patient.name||'غير محدد')+'\n📐 القياسات: ';
+  for(const key in ceph)msg+=key+'='+ceph[key]+'° ';
+  msg+='\n📷 عدد الصور: '+images.length;
+  const anb=ceph.ANB||2;
+  msg+='\n🦷 التشخيص: '+(anb>4.5?'Class II':anb<0?'Class III':'Class I');
+  showResult(msg);
+  showToast('✅ عرض الكل');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// بدء
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  initSession();
+  setTimeout(()=>showToast('🦷 اضغط "تحليل تلقائي" لتقرير شامل'),1000);
+});
+</script>
+</body>
+</html>
