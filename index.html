@@ -2,251 +2,1276 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>NAQClinixAI — النظام الموحد</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Dentofacial HarmonizeAI</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js"></script>
 <style>
+:root{--bg:#0b1220;--bg2:#0f1a2e;--card:#132039;--card2:#182747;--teal:#14b8a6;--teal2:#0d9488;--cyan:#22d3ee;--gold:#f5c76a;--txt:#e8eef7;--muted:#8fa3bf;--danger:#f87171;--ok:#34d399;--border:rgba(255,255,255,.08);--radius:16px}
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
-html,body{height:100%;overflow:hidden;background:#0b1220;color:#e8eef7}
-#app{display:flex;flex-direction:column;height:100vh}
-#topbar{background:linear-gradient(135deg,#1e3a8a,#0d9488);padding:8px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 10px rgba(0,0,0,.3);z-index:100;min-height:56px;flex-wrap:wrap}
-#topbar .logo{font-size:22px}
-#topbar .brand{font-weight:800;font-size:15px;color:#fff;letter-spacing:.5px;margin-left:8px}
-#topbar .tabs{display:flex;gap:6px;flex:1;flex-wrap:wrap}
-#topbar .tab-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;transition:all .2s;font-family:inherit;white-space:nowrap}
-#topbar .tab-btn:hover{background:rgba(255,255,255,.25)}
-#topbar .tab-btn.active{background:#fff;color:#1e3a8a;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-#topbar .user-info{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);padding:5px 10px;border-radius:8px;font-size:11px;max-width:180px}
-#topbar .user-info .avatar{width:28px;height:28px;border-radius:50%;background:#fff;color:#1e3a8a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
-#topbar .user-info .meta{overflow:hidden}
-#topbar .user-info .name{font-weight:700;color:#fff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#topbar .user-info .role{color:rgba(255,255,255,.8);font-size:9px}
-#topbar .logout-btn{background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.5);color:#fecaca;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;white-space:nowrap}
-#topbar .logout-btn:hover{background:rgba(239,68,68,.4)}
-#mainFrame{flex:1;width:100%;border:none;background:#f0f4f8;display:block}
-#loadingOverlay{position:fixed;inset:0;background:rgba(11,18,32,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:999}
-#loadingOverlay.show{display:flex}
-.spinner{width:50px;height:50px;border:4px solid rgba(20,184,166,.2);border-top-color:#14b8a6;border-radius:50%;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loadingOverlay p{color:#8fa3bf;font-size:14px;font-weight:600}
-#errorBanner{display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:998;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:90%}
-#errorBanner.show{display:block}
-@media(max-width:768px){
-  #topbar{padding:6px 8px;min-height:48px;gap:6px}
-  #topbar .brand{font-size:12px;margin-left:4px}
-  #topbar .tab-btn{padding:6px 8px;font-size:10px}
-  #topbar .user-info{display:none!important}
-  #topbar .logout-btn{padding:5px 8px;font-size:10px}
-  #topbar .logo{font-size:18px}
-}
+body{background:linear-gradient(135deg,#0b1220,#0d1b30 60%,#0b1220);color:var(--txt);min-height:100vh}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#243858;border-radius:8px}
+a{color:var(--cyan);text-decoration:none}button{cursor:pointer;font-family:inherit}
+.hidden{display:none!important}
+#loginScreen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 80% -10%,rgba(20,184,166,.18),transparent),var(--bg);padding:20px;overflow-y:auto}
+.login-card{width:min(460px,92vw);background:var(--card);border:1px solid var(--border);border-radius:24px;padding:30px 26px;box-shadow:0 30px 80px rgba(0,0,0,.5);text-align:center;max-height:98vh;overflow-y:auto;margin:auto}
+.login-card .logo{width:120px;height:120px;object-fit:contain;border-radius:20px;margin-bottom:10px;box-shadow:0 10px 30px rgba(20,184,166,.2)}
+.login-card h1{font-size:26px;margin:8px 0 2px;background:linear-gradient(90deg,var(--teal),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.login-card .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+.tabs-auth{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.tab-auth{flex:1;padding:10px;background:none;border:none;color:var(--muted);font-weight:700;font-size:13px;border-bottom:2px solid transparent}
+.tab-auth.active{color:var(--teal);border-bottom-color:var(--teal)}
+.social-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.social-btn{display:flex;align-items:center;justify-content:center;gap:4px;padding:10px 4px;border-radius:12px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-size:11px;font-weight:600;transition:.2s}
+.social-btn:hover{transform:translateY(-2px);border-color:var(--teal)}
+.field{margin-bottom:12px;text-align:right}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600}
+input,select,textarea{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:#0d1830;color:var(--txt);font-size:14px;outline:none;transition:.2s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(20,184,166,.15)}
+.btn-primary{width:100%;padding:13px;border:none;border-radius:12px;font-size:15px;font-weight:700;background:linear-gradient(90deg,var(--teal),var(--cyan));color:#04222b;transition:.2s}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-ghost{width:100%;padding:10px;border-radius:12px;background:transparent;color:var(--muted);border:1px solid var(--border);margin-top:8px;font-size:12px;font-weight:600}
+.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.role-btn{padding:10px 6px;background:rgba(0,0,0,.3);border:2px solid var(--border);border-radius:10px;text-align:center;font-size:11px;font-weight:700;color:var(--txt)}
+.role-btn.active{background:rgba(20,184,166,.15);border-color:var(--teal);color:var(--teal)}
+.role-btn .icon{font-size:20px;display:block;margin-bottom:4px}
+#app{display:flex;min-height:100vh}
+#sidebar{width:250px;background:var(--bg2);border-left:1px solid var(--border);padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;z-index:500;transition:transform .3s}
+#sidebar .brand{text-align:center;margin-bottom:14px}
+#sidebar .brand .logo{width:70px;height:70px;object-fit:contain;margin-bottom:8px;border-radius:12px}
+#sidebar .brand h2{font-size:18px;background:linear-gradient(90deg,var(--teal),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+#sidebar .brand small{color:var(--muted);font-size:11px;line-height:1.6;display:block;margin-top:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:3px;border:1px solid transparent;transition:.15s;width:100%;background:none;text-align:right}
+.nav-item:hover{background:var(--card2);color:var(--txt)}
+.nav-item.active{background:linear-gradient(90deg,rgba(20,184,166,.2),rgba(34,211,238,.1));color:var(--txt);border-color:rgba(20,184,166,.35)}
+.nav-item .ic{font-size:16px;width:22px;text-align:center}
+.nav-sep{font-size:10px;color:#5b6f92;margin:12px 8px 5px;letter-spacing:1px;text-transform:uppercase}
+#main{flex:1;padding:18px 20px;min-width:0}
+#topbar{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;flex-wrap:wrap}
+#topbar .hello{font-weight:700;font-size:13px}
+#topbar .spacer{flex:1}
+.chip-btn{padding:9px 13px;border-radius:11px;border:1px solid var(--border);background:var(--card2);color:var(--txt);font-size:12px;font-weight:600;transition:.15s}
+.chip-btn:hover{border-color:var(--teal)}
+.chip-btn.accent{background:linear-gradient(90deg,var(--teal),var(--cyan));color:#04222b;border:none}
+.section{display:none;animation:fade .25s ease}
+.section.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+.panel h2{font-size:18px;margin-bottom:4px}
+.panel .desc{color:var(--muted);font-size:12px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.grid2,.grid3,.grid4{grid-template-columns:1fr}#sidebar{position:fixed;top:0;right:0;bottom:0;transform:translateX(100%);z-index:1000;width:280px}#sidebar.open{transform:none}#main{padding:12px}}
+.menu-toggle{background:var(--card);border:1px solid var(--border);color:var(--txt);width:36px;height:36px;border-radius:8px;font-size:16px;display:flex;align-items:center;justify-content:center}
+.stat-card{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.stat-card .ic{font-size:26px}
+.stat-card .num{font-size:26px;font-weight:800;margin:6px 0 2px;color:var(--gold)}
+.stat-card .lbl{color:var(--muted);font-size:12px}
+.btn-save{padding:11px 22px;border:none;border-radius:12px;font-weight:700;font-size:13px;background:linear-gradient(90deg,var(--teal),var(--cyan));color:#04222b;transition:.2s}
+.btn-save:hover{filter:brightness(1.1)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0e2a26;border:1px solid var(--teal);color:var(--txt);padding:12px 22px;border-radius:12px;z-index:2000;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:opacity .3s;opacity:0;pointer-events:none;max-width:90%;text-align:center}
+.toast.show{opacity:1;pointer-events:auto}
+.toast.error{background:#2a0e0e;border-color:var(--danger)}
+table.tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.tbl th,table.tbl td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:right}
+table.tbl th{color:var(--cyan);font-size:11px;background:var(--card2)}
+.tooth{width:34px;height:44px;border-radius:8px 8px 12px 12px;border:2px solid #3b5178;background:#1a2a49;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);transition:.15s}
+.tooth:hover{transform:scale(1.12);z-index:2;border-color:var(--teal)}
+.tooth.caries{background:linear-gradient(145deg,#fbbf24,#d97706);color:#fff}
+.tooth.filled{background:linear-gradient(145deg,#f87171,#dc2626);color:#fff}
+.tooth.crown{background:linear-gradient(145deg,#a78bfa,#7c3aed);color:#fff}
+.tooth.missing{background:#6b7280;color:#fff}
+.tooth.root{background:linear-gradient(145deg,#fb923c,#ea580c);color:#fff}
+.chat-fab{position:fixed;bottom:22px;left:22px;width:56px;height:56px;border-radius:50%;border:none;font-size:24px;background:linear-gradient(135deg,var(--teal),var(--cyan));box-shadow:0 8px 25px rgba(20,184,166,.4);color:#04222b;z-index:990}
+#chatPanel{position:fixed;bottom:88px;left:22px;width:350px;max-width:calc(100vw - 44px);height:500px;max-height:calc(100vh - 120px);background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);z-index:991;display:none;flex-direction:column;overflow:hidden}
+#chatPanel.open{display:flex}
+.chat-head{padding:11px 14px;background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:13px}
+.chat-head button{background:none;border:none;color:#fff;font-size:16px}
+.chat-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.chat-msg{max-width:85%;padding:8px 11px;border-radius:12px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.chat-msg.user{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;align-self:flex-start}
+.chat-msg.bot{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--txt);align-self:flex-end}
+.chat-input{padding:8px;border-top:1px solid var(--border);display:flex;gap:5px}
+.chat-input input{flex:1;padding:8px 10px;border-radius:16px;font-size:12px}
+.chat-input button{padding:8px 12px;border-radius:16px;border:none;background:var(--gold);color:#04222b;font-weight:700;font-size:11px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1500;display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+.modal.show{display:flex}
+.modal .box{background:var(--card);border-radius:16px;padding:18px;max-width:460px;width:100%;margin-top:30px}
+.appt-card{background:rgba(0,0,0,.2);border-radius:10px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;border-right:3px solid var(--gold);gap:6px;flex-wrap:wrap}
+.appt-card.completed{border-right-color:var(--ok);opacity:.6}
+.appt-card .info strong{color:var(--txt);font-size:12px;display:block}
+.appt-card .info small{color:var(--muted);font-size:10px}
+.empty{text-align:center;padding:24px 16px;color:var(--muted);font-size:12px}
+.empty .ic{font-size:32px;margin-bottom:6px;opacity:.5}
+.ai-output{background:rgba(0,0,0,.3);padding:12px;border-radius:10px;border-right:3px solid var(--gold);white-space:pre-wrap;line-height:1.7;font-size:12px;margin-top:10px}
+.post-card{background:rgba(0,0,0,.2);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--border)}
+.post-card .meta{font-size:10px;color:var(--muted);margin-bottom:6px;display:flex;gap:6px;flex-wrap:wrap}
+.post-card .text{font-size:12px;line-height:1.6;white-space:pre-wrap;margin-bottom:8px}
+.post-card .actions{display:flex;gap:5px;border-top:1px solid var(--border);padding-top:6px;flex-wrap:wrap}
+.spec-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.meet-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.spec-check-item{display:flex;align-items:center;gap:8px;padding:6px;background:rgba(20,184,166,.05);border-radius:6px;margin-bottom:4px;cursor:pointer;font-size:12px}
+#threeContainer{width:100%;height:320px;border-radius:12px;overflow:hidden;background:#0d1830;margin:12px 0}
+.plan-card{background:var(--card2);border:1px solid var(--border);border-radius:18px;padding:22px;text-align:center;position:relative;transition:.2s}
+.plan-card:hover{transform:translateY(-4px);border-color:var(--teal)}
+.plan-card .price{font-size:32px;font-weight:800;margin:10px 0;color:var(--gold)}
+.plan-pop{position:absolute;top:-11px;right:50%;transform:translateX(50%);background:var(--gold);color:#3a2c05;font-size:11px;font-weight:800;padding:4px 12px;border-radius:999px;white-space:nowrap}
+.product-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:.2s}
+.product-card:hover{border-color:var(--teal);transform:translateY(-2px)}
+.product-cover{width:100%;height:140px;background:linear-gradient(135deg,#182747,#132039);display:flex;align-items:center;justify-content:center;font-size:48px;object-fit:cover}
+.product-body{padding:10px;flex:1;display:flex;flex-direction:column}
+.product-title{font-weight:700;font-size:13px;margin-bottom:4px}
+.product-desc{font-size:11px;color:var(--muted);flex:1;margin-bottom:8px}
+.product-price{font-size:16px;font-weight:800}
+.pay-method{background:rgba(0,0,0,.2);border:2px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;transition:.2s;display:flex;justify-content:space-between;align-items:center}
+.pay-method:hover{border-color:var(--teal);transform:translateX(-4px)}
+.app-footer{text-align:center;color:var(--muted);font-size:12px;padding:26px 0 10px;border-top:1px solid var(--border);margin-top:20px}
+.report-section{background:rgba(20,184,166,.05);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
+.report-section label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px}
+.report-section input[type=checkbox]{width:18px;height:18px}
+#faceCanvas{max-width:100%}
+.photo-group{margin-bottom:16px}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.photo-item{background:var(--card2);border:1px solid var(--border);border-radius:10px;overflow:hidden;position:relative}
+.photo-item img{width:100%;height:120px;object-fit:cover;cursor:pointer}
+.photo-item .photo-actions{padding:6px;font-size:10px}
+.badge{display:inline-block;padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700}
+.badge.ok{background:rgba(52,211,153,.15);color:var(--ok)}
+.badge.warn{background:rgba(245,199,106,.15);color:var(--gold)}
+.badge.danger{background:rgba(248,113,113,.15);color:var(--danger)}
+.notif-bell{position:relative;cursor:pointer;font-size:20px}
+.notif-badge{position:absolute;top:-5px;right:-8px;background:var(--danger);color:#fff;font-size:10px;border-radius:50%;padding:2px 6px}
 </style>
 </head>
 <body>
 
-<div id="app">
-  <div id="topbar">
-    <div class="logo">🦷</div>
-    <div class="brand">NAQClinixAI</div>
-
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="clinic" onclick="switchTab('clinic')">🏥 العيادة</button>
-      <button class="tab-btn" data-tab="lab" onclick="switchTab('lab')">🧪 المعمل</button>
-      <button class="tab-btn" data-tab="analyzer" onclick="switchTab('analyzer')">🔬 التحليل</button>
-    </div>
-
-    <div class="user-info" id="userInfo" style="display:none">
-      <div class="avatar" id="userAvatar">-</div>
-      <div class="meta">
-        <div class="name" id="userName">-</div>
-        <div class="role" id="userRole">-</div>
-      </div>
-    </div>
-
-    <button class="logout-btn" onclick="logout()" style="display:none" id="logoutBtn">🚪</button>
-  </div>
-
-  <iframe id="mainFrame" src="Clinical.html" title="النظام الرئيسي"></iframe>
+<div id="loginScreen">
+<div class="login-card">
+<img src="https://files.catbox.moe/ie58wq.png" alt="Dentofacial Logo" class="logo">
+<h1>Dentofacial</h1>
+<div class="sub">HarmonizeAI™ · v12.0</div>
+<div class="tabs-auth">
+<button class="tab-auth active" onclick="switchAuth('login')" id="tabLogin">🔑 دخول</button>
+<button class="tab-auth" onclick="switchAuth('register')" id="tabReg">➕ حساب جديد</button>
+</div>
+<div id="loginForm">
+<div class="field"><label>📧 البريد</label><input type="email" id="loginEmail" placeholder="your@email.com"></div>
+<div class="field"><label>🔑 كلمة المرور</label><input type="password" id="loginPassword" onkeydown="if(event.key==='Enter')doLogin()"></div>
+<button class="btn-primary" onclick="doLogin()" id="btnLogin">🚪 دخول</button>
+<button class="btn-ghost" onclick="resetPassword()">🔐 نسيت كلمة المرور؟</button>
+<p id="loginErr" class="hidden" style="margin-top:10px;color:var(--danger);font-size:11px;text-align:center"></p>
+</div>
+<div id="registerForm" class="hidden">
+<div class="field"><label style="color:var(--teal);margin-bottom:6px">👤 نوع الحساب</label>
+<div class="role-grid">
+<div class="role-btn active" id="roleDoctorBtn" onclick="selectRegRole('doctor')"><span class="icon">👨‍⚕️</span>طبيب<br><span style="font-size:9px;opacity:.7">ينشئ عيادة</span></div>
+<div class="role-btn" id="roleEmployeeBtn" onclick="selectRegRole('employee')"><span class="icon">👨‍💼</span>موظف<br><span style="font-size:9px;opacity:.7">ينضم لعيادة</span></div>
+<div class="role-btn" id="roleGuestBtn" onclick="selectRegRole('guest')"><span class="icon">👤</span>عام<br><span style="font-size:9px;opacity:.7">استكشاف</span></div>
+</div></div>
+<div class="field"><label>👤 الاسم الكامل *</label><input type="text" id="regName"></div>
+<div class="field"><label>📧 البريد *</label><input type="email" id="regEmail"></div>
+<div class="field"><label>🔑 كلمة المرور (6+)</label><input type="password" id="regPassword"></div>
+<div class="field"><label>🔒 تأكيد كلمة المرور</label><input type="password" id="regPassword2"></div>
+<div id="doctorFields">
+<div class="field"><label>🏥 اسم العيادة *</label><input type="text" id="regClinicName"></div>
+<div class="field"><label>📍 عنوان العيادة</label><input type="text" id="regClinicAddress"></div>
+<div class="field"><label>🎓 التخصص</label><select id="regSpecialty"><option>عام</option><option>تقويم</option><option>جراحة</option><option>تجميل</option><option>لبية</option><option>أطفال</option><option>تركيبات</option><option>لثة</option></select></div>
+<div class="field"><label>📞 هاتف العيادة</label><input type="tel" id="regClinicPhone"></div>
+</div>
+<div id="employeeFields" class="hidden">
+<div class="field"><label>🏥 كود العيادة *</label><input type="text" id="regClinicCode" style="font-family:monospace;text-transform:uppercase"></div>
+<div class="field"><label>💼 المنصب</label><select id="regPosition"><option>مساعد طبيب</option><option>موظف استقبال</option><option>فني مختبر</option><option>محاسب</option></select></div>
+</div>
+<div id="guestFields">
+<div class="field"><label>🎓 التخصص/الاهتمام</label><input type="text" id="regInterest"></div>
+<div class="field"><label>🌍 البلد</label><input type="text" id="regCountry"></div>
+</div>
+<div style="display:flex;align-items:center;gap:8px;margin:10px 0;font-size:11px;color:var(--muted)">
+<input type="checkbox" id="regPrivacy" checked style="width:16px;height:16px;flex:0">
+<label for="regPrivacy" style="margin:0">أوافق على سياسة الخصوصية</label>
+</div>
+<button class="btn-primary" onclick="doRegister()" id="btnReg">➕ إنشاء الحساب</button>
+<p id="regErr" class="hidden" style="margin-top:10px;color:var(--danger);font-size:11px;text-align:center"></p>
+</div>
+<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+<p style="text-align:center;color:var(--muted);font-size:11px;margin-bottom:8px">— أو ادخل بـ —</p>
+<button class="btn-ghost" onclick="loginAnonymous()">👤 دخول كضيف</button>
+<div class="social-grid" style="margin-top:8px">
+<button class="social-btn" onclick="socialLogin('google')" style="background:#db4437;color:#fff">🔴 Google</button>
+<button class="social-btn" onclick="socialLogin('facebook')" style="background:#4267B2;color:#fff">🔵 Facebook</button>
+<button class="social-btn" onclick="socialLogin('twitter')" style="background:#1DA1F2;color:#fff">🐦 Twitter</button>
+<button class="social-btn" onclick="socialLogin('github')" style="background:#333;color:#fff">🐙 GitHub</button>
+</div>
+</div>
+<p id="socialErr" class="hidden" style="margin-top:10px;color:var(--danger);font-size:11px;text-align:center"></p>
+</div>
 </div>
 
-<div id="loadingOverlay">
-  <div class="spinner"></div>
-  <p id="loadingText">جاري التحميل...</p>
+<div id="app" class="hidden">
+<aside id="sidebar">
+<div class="brand">
+<img src="https://files.catbox.moe/ie58wq.png" alt="Dentofacial" class="logo">
+<h2>Dentofacial</h2>
+<small id="brandSub">v12.0</small>
+</div>
+<div class="nav-sep">الرئيسية</div>
+<button class="nav-item active" data-sec="dashboard"><span class="ic">🏥</span>لوحة التحكم</button>
+<div class="nav-sep">ملف المريض</div>
+<button class="nav-item" data-sec="patients"><span class="ic">👥</span>المرضى</button>
+<button class="nav-item" data-sec="patientPhotos"><span class="ic">📸</span>صور المريض</button>
+<button class="nav-item" data-sec="history"><span class="ic">💊</span>التاريخ الطبي</button>
+<button class="nav-item" data-sec="chart"><span class="ic">📊</span>مخطط الأسنان</button>
+<button class="nav-item" data-sec="appointments"><span class="ic">🗓️</span>المواعيد</button>
+<div class="nav-sep">الإدارة المالية</div>
+<button class="nav-item" data-sec="billing"><span class="ic">💳</span>حسابات المرضى</button>
+<div class="nav-sep">التحليل الذكي</div>
+<button class="nav-item" data-sec="faceAnalysis"><span class="ic">🧑‍⚕️</span>تحليل الوجه</button>
+<button class="nav-item" data-sec="aiDiagnosis"><span class="ic">🧠</span>تشخيص AI</button>
+<button class="nav-item" data-sec="aiTreatment"><span class="ic">📋</span>خطة العلاج AI</button>
+<button class="nav-item" data-sec="smileDesign"><span class="ic">😁</span>تصميم الابتسامة</button>
+<button class="nav-item" data-sec="cadcam"><span class="ic">⚙️</span>CAD/CAM & 3D</button>
+<div class="nav-sep">المتجر الرقمي</div>
+<button class="nav-item" data-sec="store"><span class="ic">🏪</span>المتجر</button>
+<button class="nav-item" data-sec="myOrders"><span class="ic">📦</span>مشترياتي</button>
+<button class="nav-item" data-sec="subscriptions"><span class="ic">⭐</span>خطط الاشتراك</button>
+<button class="nav-item" data-sec="mySubscription"><span class="ic">🎫</span>اشتراكي</button>
+<div class="nav-sep">المجتمع</div>
+<button class="nav-item" data-sec="friends"><span class="ic">👫</span>الأصدقاء</button>
+<button class="nav-item" data-sec="dentbook"><span class="ic">📖</span>Dentbook</button>
+<button class="nav-item" data-sec="dentchat"><span class="ic">💬</span>DentChat</button>
+<button class="nav-item" data-sec="discussions"><span class="ic">🗣️</span>المناقشات</button>
+<button class="nav-item" data-sec="meetings"><span class="ic">📹</span>الاجتماعات</button>
+<div class="nav-sep">الأنظمة</div>
+<button class="nav-item" data-sec="lab"><span class="ic">🧪</span>المعمل</button>
+<button class="nav-item" data-sec="specialists"><span class="ic">🎓</span>الأخصائيون</button>
+<div class="nav-sep">الإدارة</div>
+<button class="nav-item" data-sec="users"><span class="ic">👥</span>الفريق</button>
+<button class="nav-item" data-sec="report"><span class="ic">📄</span>التقرير الشامل</button>
+<button class="nav-item" data-sec="manageProducts" data-admin="true"><span class="ic">📚</span>إدارة المنتجات</button>
+<button class="nav-item" data-sec="manageSubscriptions" data-admin="true"><span class="ic">🎯</span>إدارة الاشتراكات</button>
+<button class="nav-item" data-sec="manageAds" data-admin="true"><span class="ic">📢</span>إدارة الإعلانات</button>
+<button class="nav-item" data-sec="settings"><span class="ic">⚙️</span>الإعدادات</button>
+<div class="nav-sep"></div>
+<button class="nav-item" onclick="doLogout()" style="color:var(--danger);background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.25)"><span class="ic">🚪</span>تسجيل الخروج</button>
+</aside>
+
+<main id="main">
+<div id="topbar">
+<button class="menu-toggle" id="menuBtn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<span class="hello">مرحباً، <b id="userName">-</b> 👋</span>
+<span class="spacer"></span>
+<div class="notif-bell" onclick="showSection('notifications')">🔔<span class="notif-badge hidden" id="notifCount">0</span></div>
+<button class="chip-btn" onclick="exportAllExcel()">📊 Excel</button>
+<button class="chip-btn" onclick="showSection('store')">🏪</button>
+<button class="chip-btn" onclick="showSection('settings')">⚙️</button>
 </div>
 
-<div id="errorBanner"></div>
+<section class="section active" id="sec-dashboard">
+<div class="panel"><h2>📊 لوحة التحكم</h2><div class="desc" id="clinicInfo">جاري التحميل...</div>
+<div class="grid4">
+<div class="stat-card"><div class="ic">👥</div><div class="num" id="statPatients">0</div><div class="lbl">المرضى</div></div>
+<div class="stat-card"><div class="ic">📅</div><div class="num" id="statAppts">0</div><div class="lbl">المواعيد</div></div>
+<div class="stat-card"><div class="ic">🧪</div><div class="num" id="statLab">0</div><div class="lbl">المعمل</div></div>
+<div class="stat-card"><div class="ic">🎓</div><div class="num" id="statSpecs">0</div><div class="lbl">الأخصائيون</div></div>
+</div>
+<div style="margin-top:14px"><canvas id="chartMain" height="100"></canvas></div>
+</div>
+</section>
+
+<section class="section" id="sec-patients">
+<div class="panel"><h2>👥 المرضى</h2><div class="desc">مرضى عيادتك</div>
+<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+<input type="text" id="searchPatients" placeholder="🔍 بحث..." oninput="renderPatients()" style="flex:1;min-width:150px">
+<button class="chip-btn accent" onclick="openAddPatient()" style="flex:0">➕ مريض</button>
+</div>
+<div id="patientsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-billing">
+<div class="panel">
+<h2>💳 حسابات المرضى</h2><div class="desc">إدارة المدفوعات، التكلفة، والمتبقي</div>
+<div class="grid4" style="margin-bottom:14px">
+<div class="stat-card"><div class="ic">📅</div><div class="num" id="billingToday">0</div><div class="lbl">مدفوعات اليوم</div></div>
+<div class="stat-card"><div class="ic">📆</div><div class="num" id="billingMonth">0</div><div class="lbl">مدفوعات الشهر</div></div>
+<div class="stat-card"><div class="ic">📊</div><div class="num" id="billingYear">0</div><div class="lbl">مدفوعات السنة</div></div>
+<div class="stat-card"><div class="ic">💰</div><div class="num" id="billingTotalRemaining" style="color:var(--danger)">0</div><div class="lbl">إجمالي المتبقي</div></div>
+</div>
+<div style="background:rgba(20,184,166,.05);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+<h3 style="font-size:13px;color:var(--teal);margin-bottom:10px">➕ إضافة دفعة / تكلفة جديدة</h3>
+<div class="grid2">
+<div class="field"><label>المريض *</label><select id="billPatient"></select></div>
+<div class="field"><label>التاريخ *</label><input type="date" id="billDate"></div>
+<div class="field"><label>اجمالي التكلفة ($)</label><input type="number" id="billTotalCost" value="0" step="0.01"></div>
+<div class="field"><label>المبلغ المدفوع ($)</label><input type="number" id="billPaid" value="0" step="0.01"></div>
+<div class="field"><label>ملاحظات</label><input id="billNotes" placeholder="ملاحظات..."></div>
+</div>
+<button class="btn-save" onclick="saveBilling()">💾 حفظ الدفعة</button>
+</div>
+<h3 style="font-size:13px;margin:14px 0 8px">📋 سجل الحسابات</h3>
+<div id="billingList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-notifications">
+<div class="panel">
+<h2>🔔 الإشعارات</h2><div class="desc">التحديثات والتنبيهات</div>
+<button class="chip-btn" style="margin-bottom:10px" onclick="markAllNotificationsRead()">تحديد الكل كمقروء</button>
+<div id="notificationsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-patientPhotos">
+<div class="panel"><h2>📸 صور المريض</h2><div class="desc" id="photosCtx">لم يتم اختيار مريض</div>
+<div id="photosForm" class="hidden">
+<div style="background:rgba(20,184,166,.05);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+<h3 style="font-size:13px;color:var(--teal);margin-bottom:10px">➕ إضافة صورة جديدة</h3>
+<div class="grid2">
+<div class="field"><label>نوع الصورة *</label>
+<select id="photoType">
+<option value="personal">👤 شخصية</option>
+<option value="frontal">😊 أمامية</option>
+<option value="profile">👥 جانبية</option>
+<option value="smile">😁 ابتسامة</option>
+<option value="teeth_open">🦷 أسنان مفتوحة</option>
+<option value="xray_panoramic">🩻 أشعة بانورامية</option>
+<option value="xray_ceph">🩻 أشعة سيفالومترية</option>
+<option value="xray_periapical">🩻 أشعة حول ذروية</option>
+<option value="xray_bitewing">🩻 أشعة إطباقية</option>
+<option value="before">🔴 قبل العلاج</option>
+<option value="after">🟢 بعد العلاج</option>
+<option value="other">📷 أخرى</option>
+</select></div>
+<div class="field"><label>ملاحظة</label><input id="photoNote" placeholder="اختياري"></div>
+</div>
+<div class="field"><label>📤 اختر الصورة</label><input type="file" id="photoFileInput" accept="image/*"></div>
+<button class="btn-save" onclick="uploadPatientPhoto()" id="btnUploadPhoto">💾 حفظ الصورة</button>
+<div id="photoUploadStatus" style="margin-top:8px;font-size:12px"></div>
+</div>
+<h3 style="font-size:13px;margin-bottom:10px">🖼️ معرض الصور</h3>
+<div id="patientPhotosGallery"></div>
+</div>
+</div>
+</section>
+
+<section class="section" id="sec-history">
+<div class="panel"><h2>💊 التاريخ الطبي</h2><div class="desc" id="historyCtx">لم يتم اختيار مريض</div>
+<div id="historyForm" class="hidden">
+<div class="field"><label>الأمراض المزمنة</label><textarea id="histChronic" rows="2"></textarea></div>
+<div class="field"><label>الحساسية</label><textarea id="histAllergy" rows="2"></textarea></div>
+<div class="field"><label>الأدوية</label><textarea id="histDrugs" rows="2"></textarea></div>
+<div class="grid2">
+<div class="field"><label>التدخين</label><select id="histSmoke"><option value="">—</option><option>لا</option><option>خفيف</option><option>مدخن</option></select></div>
+<div class="field"><label>عمليات</label><select id="histSurgery"><option value="">—</option><option>لا</option><option>نعم</option></select></div>
+</div>
+<div class="field"><label>ملاحظات</label><textarea id="histNotes" rows="2"></textarea></div>
+<button class="btn-save" onclick="saveHistory()">💾 حفظ</button>
+</div>
+</div>
+</section>
+
+<section class="section" id="sec-chart">
+<div class="panel"><h2>📊 مخطط الأسنان</h2><div class="desc" id="chartCtx">لم يتم اختيار مريض</div>
+<div id="chartForm" class="hidden">
+<div style="margin-bottom:6px;font-size:11px;color:var(--muted)">الفك العلوي</div>
+<div id="upperTeeth" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:10px"></div>
+<div style="margin-bottom:6px;font-size:11px;color:var(--muted)">الفك السفلي</div>
+<div id="lowerTeeth" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:10px"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:10px;margin-bottom:8px">
+<span>✅ سليم</span><span style="color:#fbbf24">⚠️ تسوس</span><span style="color:#f87171">🩹 حشو</span><span style="color:#a78bfa">👑 تاج</span><span style="color:#fb923c">🦷 عصب</span><span style="color:#6b7280">❌ مفقود</span>
+</div>
+<button class="btn-save" onclick="saveChart()">💾 حفظ</button>
+</div>
+</div>
+</section>
+
+<section class="section" id="sec-appointments">
+<div class="panel"><h2>🗓️ المواعيد</h2><div class="desc">حجز وإدارة</div>
+<div class="grid2" style="margin-bottom:10px">
+<div class="field"><label>المريض *</label><select id="apptPatient"></select></div>
+<div class="field"><label>التاريخ *</label><input type="date" id="apptDate"></div>
+<div class="field"><label>الوقت *</label><input type="time" id="apptTime" value="10:00"></div>
+<div class="field"><label>النوع</label><select id="apptType"><option>فحص</option><option>حشو</option><option>تنظيف</option><option>خلع</option><option>تقويم</option><option>زراعة</option></select></div>
+</div>
+<button class="btn-save" onclick="addAppointment()">➕ حجز موعد</button>
+<h3 style="font-size:13px;margin:14px 0 8px">📋 المواعيد</h3>
+<div id="appointmentsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-faceAnalysis">
+<div class="panel"><h2>🧑‍⚕️ تحليل الوجه التشريحي</h2><div class="desc">468 علامة تشريحية + خطوط الجمال + النسب الذهبية</div>
+<div class="grid2" style="margin-bottom:14px">
+<div class="field"><label>المريض</label><select id="facePatient"></select></div>
+<div class="field"><label>صورة الوجه الأمامية</label><input type="file" id="faceImageInput" accept="image/*"></div>
+</div>
+<div style="position:relative;background:#000;border-radius:12px;overflow:hidden;min-height:400px" id="faceCanvasWrap">
+<canvas id="faceCanvas" style="width:100%;display:block"></canvas>
+<div id="facePlaceholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px">📸 ارفع صورة الوجه الأمامية للبدء</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+<button class="btn-save" onclick="analyzeFace()" id="btnAnalyzeFace">🧠 تحليل الوجه (468 علامة)</button>
+<button class="chip-btn" onclick="drawBeautyLines()">✨ خطوط الجمال</button>
+<button class="chip-btn" onclick="drawGoldenRatio()">📐 النسبة الذهبية</button>
+<button class="chip-btn" onclick="clearFaceCanvas()">🗑️ مسح</button>
+<button class="chip-btn" onclick="saveFaceAnalysis()">💾 حفظ التحليل</button>
+</div>
+<div id="faceMetrics" style="margin-top:14px"></div>
+<div id="faceAiOutput" style="margin-top:14px"></div>
+</div>
+</section>
+
+<section class="section" id="sec-aiDiagnosis">
+<div class="panel"><h2>🧠 تشخيص AI متقدم</h2><div class="desc">تحليل صور + نصي + تشخيص متعدد التخصصات</div>
+<div class="grid2">
+<div class="field"><label>المريض *</label><select id="aiPatient"></select></div>
+<div class="field"><label>الشكوى الرئيسية *</label><input id="aiComplaint" placeholder="ألم في الضرس"></div>
+</div>
+<div class="field"><label>التفاصيل</label><textarea id="aiDetails" rows="2"></textarea></div>
+<div class="field">
+<label>📸 صور للتشخيص (اختياري - يمكن إضافة عدة صور)</label>
+<input type="file" id="aiImageInput" accept="image/*" multiple onchange="handleAIImages(this)" style="padding:8px">
+</div>
+<div id="aiImagesPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+<div class="grid2">
+<div class="field"><label>التخصص</label>
+<select id="aiSpecialty">
+<option value="general">عام</option>
+<option value="ortho">تقويم</option>
+<option value="surgery">جراحة</option>
+<option value="cosmetic">تجميلي</option>
+<option value="endo">لبية</option>
+<option value="perio">لثة</option>
+<option value="prostho">تركيبات</option>
+<option value="pedo">أطفال</option>
+</select></div>
+<div class="field"><label>المستوى</label>
+<select id="aiLevel">
+<option value="standard">قياسي</option>
+<option value="detailed">مفصل</option>
+<option value="multidisciplinary">متعدد التخصصات</option>
+</select></div>
+</div>
+<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+<button class="btn-save" onclick="runAIDiagnosis()">🧠 تشخيص شامل</button>
+<button class="chip-btn" onclick="runAIMultiSpecialty()">🎯 متعدد التخصصات</button>
+</div>
+<div id="aiOutput"></div>
+</div>
+</section>
+
+<section class="section" id="sec-aiTreatment">
+<div class="panel"><h2>📋 خطط العلاج AI (أساسية + بديلة)</h2><div class="desc">توليد خطة رئيسية وخطة بديلة ومقارنتها</div>
+<div class="field"><label>المريض *</label><select id="aiPatient2"></select></div>
+<div class="field"><label>التشخيص / الشكوى</label><input id="aiComplaint2" placeholder="تسوس متعدد + فقدان أسنان"></div>
+<div class="field"><label>الميزانية (اختياري)</label>
+<select id="aiBudget">
+<option value="">غير محدد</option>
+<option value="low">منخفضة</option>
+<option value="medium">متوسطة</option>
+<option value="high">عالية</option>
+</select></div>
+<div class="field"><label>مدة العلاج (اختياري)</label>
+<select id="aiDuration">
+<option value="">غير محدد</option>
+<option value="short">أقل من 3 أشهر</option>
+<option value="medium">3-12 شهر</option>
+<option value="long">أكثر من سنة</option>
+</select></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+<button class="btn-save" onclick="runAITreatment()">📋 خطة رئيسية</button>
+<button class="chip-btn" onclick="runAIAltTreatment()">🔄 خطة بديلة</button>
+<button class="chip-btn" onclick="compareTreatments()">⚖️ مقارنة الخطتين</button>
+</div>
+<div id="aiOutput2"></div>
+<div id="aiOutputAlt" style="margin-top:14px"></div>
+<div id="aiOutputCompare" style="margin-top:14px"></div>
+</div>
+</section>
+
+<section class="section" id="sec-smileDesign">
+<div class="panel"><h2>😁 تصميم الابتسامة (DSD)</h2><div class="desc">تصميم رقمي احترافي</div>
+<div onclick="document.getElementById('exoUpload').click()" style="border:2px dashed var(--border);border-radius:12px;padding:14px;text-align:center;background:rgba(0,0,0,.2);min-height:140px;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer" id="exoUploadZone">
+<div id="exoUploadPh"><div style="font-size:30px;color:var(--gold)">📸</div><div style="color:var(--muted);font-size:11px">اضغط لرفع صورة</div></div>
+<img id="exoImg" style="display:none;max-width:100%;max-height:280px;border-radius:10px">
+</div>
+<input type="file" id="exoUpload" accept="image/*" style="display:none" onchange="handleExoUpload(event)">
+<div style="margin-top:12px;background:rgba(245,199,106,.04);border:1px solid rgba(245,199,106,.25);border-radius:12px;padding:12px">
+<div style="color:var(--gold);font-weight:700;font-size:13px;text-align:center;margin-bottom:8px">🎯 Smile Controls</div>
+<canvas id="exoDiagram" width="700" height="200" style="width:100%;border-radius:8px;background:#050810;display:block"></canvas>
+<div class="grid2" style="margin-top:8px">
+<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:6px"><label style="font-size:10px">Width <span id="vWidth" style="color:var(--gold)">1.00</span></label><input type="range" id="pWidth" min="0.5" max="1.5" step="0.05" value="1.0" oninput="updateExoParam('smile_width',this.value)" style="padding:0;background:transparent;border:none"></div>
+<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:6px"><label style="font-size:10px">Curve <span id="vCurve" style="color:var(--gold)">0.50</span></label><input type="range" id="pCurve" min="0.2" max="1.0" step="0.05" value="0.5" oninput="updateExoParam('smile_curve',this.value)" style="padding:0;background:transparent;border:none"></div>
+<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:6px"><label style="font-size:10px">Size <span id="vSize" style="color:var(--gold)">1.00</span></label><input type="range" id="pSize" min="0.3" max="1.5" step="0.05" value="1.0" oninput="updateExoParam('tooth_size',this.value)" style="padding:0;background:transparent;border:none"></div>
+<div style="background:rgba(0,0,0,.3);border-radius:8px;padding:6px"><label style="font-size:10px">Whiteness <span id="vWhite" style="color:var(--gold)">0.80</span></label><input type="range" id="pWhite" min="0.3" max="1.0" step="0.05" value="0.8" oninput="updateExoParam('tooth_whiteness',this.value)" style="padding:0;background:transparent;border:none"></div>
+</div>
+<div class="grid2" style="margin-top:10px">
+<button class="chip-btn accent" onclick="designExoSmile()">🎨 تصميم</button>
+<button class="chip-btn" onclick="saveExoDesign()">💾 حفظ</button>
+<button class="chip-btn" onclick="downloadExoReport()">📄 PDF</button>
+<button class="chip-btn" onclick="exportExoCAD()">🖥️ STL</button>
+</div>
+<div id="exoPreview" style="display:none;margin-top:10px">
+<div class="grid2">
+<div style="text-align:center"><img id="exoBeforeImg" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--danger);margin-top:4px">🔴 قبل</div></div>
+<div style="text-align:center"><img id="exoAfterImg" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:2px solid var(--ok)"><div style="font-size:10px;color:var(--ok);margin-top:4px">🟢 بعد</div></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section class="section" id="sec-cadcam">
+<div class="panel"><h2>⚙️ CAD/CAM & 3D</h2><div class="desc">عرض ثلاثي الأبعاد</div>
+<div id="threeContainer"></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+<button class="chip-btn" onclick="toast('📥 تم تصدير STL')">📥 STL</button>
+<button class="chip-btn accent" onclick="toast('🔄 Exocad')">🔄 Exocad</button>
+<button class="chip-btn" onclick="toast('👑 تاج')">👑 تاج</button>
+</div>
+</div>
+</section>
+
+<section class="section" id="sec-store">
+<div class="panel"><h2>🏪 المتجر الرقمي</h2><div class="desc">كتب، أنظمة، أدوات، وإضافات AI</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+<input id="storeSearch" placeholder="🔍 ابحث..." oninput="renderStore()" style="flex:1;min-width:150px">
+<select id="storeFilter" onchange="renderStore()" style="flex:0;min-width:150px">
+<option value="">كل الفئات</option>
+<option value="book">📚 كتب</option>
+<option value="system">⚙️ أنظمة</option>
+<option value="editor">🎨 أدوات تحرير</option>
+<option value="ai">🧠 أدوات AI</option>
+<option value="course">🎓 دورات</option>
+</select>
+</div>
+<div id="storeProducts"></div>
+</div>
+</section>
+
+<section class="section" id="sec-myOrders">
+<div class="panel"><h2>📦 مشترياتي</h2><div class="desc">الكتب والأنظمة التي اشتريتها</div>
+<div id="myOrdersList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-subscriptions">
+<div class="panel"><h2>⭐ خطط الاشتراك</h2><div class="desc">اختر الخطة المناسبة</div>
+<div id="subscriptionPlans" class="grid3"></div>
+</div>
+</section>
+
+<section class="section" id="sec-mySubscription">
+<div class="panel"><h2>🎫 اشتراكي الحالي</h2><div class="desc">حالة اشتراكك والفترة المتبقية</div>
+<div id="mySubscriptionInfo"></div>
+</div>
+</section>
+
+<section class="section" id="sec-friends">
+<div class="panel"><h2>👫 الأصدقاء</h2><div class="desc">إدارة الصداقات</div>
+<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+<button class="chip-btn accent" onclick="loadFriends()">🔄 تحديث</button>
+<button class="chip-btn" onclick="openAddFriendModal()">➕ إضافة</button>
+</div>
+<h3 style="font-size:12px;margin:10px 0 6px;color:var(--gold)">📥 طلبات واردة</h3>
+<div id="incomingRequests"></div>
+<h3 style="font-size:12px;margin:10px 0 6px;color:var(--teal)">📤 طلبات صادرة</h3>
+<div id="outgoingRequests"></div>
+<h3 style="font-size:12px;margin:10px 0 6px;color:var(--ok)">✅ أصدقائي</h3>
+<div id="friendsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-dentbook">
+<div class="panel"><h2>📖 Dentbook</h2><div class="desc">منصة التواصل الطبي</div>
+<div style="background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px">
+<textarea id="postInput" rows="2" placeholder="ماذا تريد مشاركته؟" style="width:100%;border:none;background:transparent;color:var(--txt);font-size:13px;resize:none;outline:none"></textarea>
+<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);align-items:center">
+<label class="chip-btn" style="cursor:pointer;background:rgba(52,211,153,.15);border-color:var(--ok);color:var(--ok);flex:0">📷<input type="file" id="postImageInput" accept="image/*" style="display:none" onchange="handlePostImage(this)"></label>
+<input id="postVideoUrl" placeholder="رابط YouTube..." style="flex:1;min-width:120px;padding:7px 10px;font-size:11px">
+<button class="chip-btn accent" onclick="createPost()" style="flex:0;padding:8px 14px">📤</button>
+</div>
+<div id="postMediaPreview" style="margin-top:8px"></div>
+</div>
+<div id="postsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-dentchat">
+<div class="panel"><h2>💬 DentChat</h2><div class="desc">دردشة المجتمع</div>
+<div id="dentChatBody" style="background:rgba(0,0,0,.2);border-radius:10px;padding:10px;min-height:280px;max-height:400px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:6px"></div>
+<div style="display:flex;gap:5px">
+<input id="dentChatInput" placeholder="اكتب رسالة..." onkeydown="if(event.key==='Enter')sendDentChat()">
+<button class="chip-btn accent" onclick="sendDentChat()">📤</button>
+</div>
+</div>
+</section>
+
+<section class="section" id="sec-discussions">
+<div class="panel"><h2>🗣️ المناقشات</h2><div class="desc">نقاش الحالات</div>
+<div class="grid2" style="margin-bottom:8px">
+<div class="field"><label>العنوان</label><input id="discTitle"></div>
+<div class="field"><label>النوع</label><select id="discType"><option value="general">عامة</option><option value="case">حالة سريرية</option><option value="specialist">استشارة أخصائي</option></select></div>
+</div>
+<div class="field"><label>المريض</label><select id="discPatient"><option value="">—</option></select></div>
+<div class="field"><label>الوصف</label><textarea id="discBody" rows="3"></textarea></div>
+<label style="margin-top:10px;color:var(--muted);font-size:12px;display:block">الأخصائيون المدعوون</label>
+<div id="discInvitesList" style="background:rgba(0,0,0,.2);padding:8px;border-radius:10px;max-height:120px;overflow-y:auto;margin-bottom:10px"></div>
+<button class="btn-save" onclick="createDiscussion()">➕ نشر</button>
+<h3 style="margin:16px 0 10px;font-size:13px">📋 المناقشات</h3>
+<div id="discussionsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-meetings">
+<div class="panel"><h2>📹 الاجتماعات</h2><div class="desc">Jitsi · متعدد التخصصات + مشاركة الصور</div>
+<div class="grid2" style="margin-bottom:10px">
+<div class="field"><label>العنوان *</label><input id="meetTitle"></div>
+<div class="field"><label>النوع</label><select id="meetType"><option value="discussion">📋 مناقشة</option><option value="consultation">👨‍⚕️ استشارة</option><option value="multidisciplinary">🎯 متعدد التخصصات</option><option value="treatment-plan">📐 خطة علاج</option></select></div>
+<div class="field"><label>التاريخ *</label><input type="date" id="meetDate"></div>
+<div class="field"><label>الوقت *</label><input type="time" id="meetTime" value="14:00"></div>
+<div class="field"><label>المدة (دقيقة)</label><input type="number" id="meetDuration" value="30" min="15" max="180"></div>
+<div class="field"><label>الموقع</label><input id="meetLocation" value="أونلاين"></div>
+</div>
+<div class="field"><label>المريض</label><select id="meetPatient"><option value="">—</option></select></div>
+<label style="margin-top:10px;color:var(--muted);font-size:12px;display:block">الأخصائيون المدعوون</label>
+<div id="meetSpecialistsList" style="max-height:150px;overflow-y:auto;background:rgba(0,0,0,.2);padding:8px;border-radius:10px;margin-bottom:10px"></div>
+<div class="grid2" style="margin-bottom:10px">
+<div class="field"><label>جهة الاتصال</label><input id="meetContactName"></div>
+<div class="field"><label>الهاتف</label><input id="meetContactPhone" type="tel"></div>
+</div>
+<div class="field"><label>ملاحظات</label><textarea id="meetNotes" rows="2"></textarea></div>
+<button class="btn-save" style="margin-top:10px" onclick="createMeeting()">➕ إنشاء اجتماع</button>
+<h3 style="margin:16px 0 10px;font-size:13px">📋 الاجتماعات المجدولة</h3>
+<div id="meetingsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-lab">
+<div class="panel"><h2>🧪 المعمل</h2><div class="desc">إدارة طلبات المعمل</div>
+<div class="grid2" style="margin-bottom:10px">
+<div class="field"><label>المريض</label><select id="labPatient"></select></div>
+<div class="field"><label>نوع العمل</label><select id="labType"><option>تاج</option><option>جسر</option><option>طقم</option><option>زرعة</option><option>فينير</option></select></div>
+<div class="field"><label>المعمل</label><input id="labName"></div>
+<div class="field"><label>الاستلام</label><input type="date" id="labDue"></div>
+</div>
+<div class="field"><label>ملاحظات</label><textarea id="labNotes" rows="2"></textarea></div>
+<button class="btn-save" style="margin-top:10px" onclick="addLab()">➕ إضافة</button>
+<h3 style="font-size:13px;margin:14px 0 8px">📋 الطلبات</h3>
+<div id="labList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-specialists">
+<div class="panel"><h2>🎓 الأخصائيون</h2><div class="desc">بيانات كاملة للتواصل</div>
+<h3 style="font-size:13px;margin-bottom:10px;color:var(--gold)">➕ إضافة أخصائي</h3>
+<div class="grid2" style="margin-bottom:10px">
+<div class="field"><label>الاسم *</label><input id="specName"></div>
+<div class="field"><label>التخصص *</label><select id="specSpecialty"><option>تقويم</option><option>جراحة فم</option><option>لبية</option><option>تركيبات</option><option>أطفال</option><option>لثة</option><option>أشعة</option><option>تجميل</option><option>مخ وأعصاب</option><option>أنف وأذن</option><option>جلدية</option></select></div>
+<div class="field"><label>الهاتف *</label><input id="specPhone" type="tel"></div>
+<div class="field"><label>البريد</label><input id="specEmail" type="email"></div>
+<div class="field"><label>الموقع</label><input id="specLocation"></div>
+<div class="field"><label>المدينة</label><input id="specCity"></div>
+</div>
+<div class="field"><label>متاح Zoom؟</label>
+<select id="specZoomAvailable"><option value="yes">✅ نعم</option><option value="no">❌ لا</option><option value="appointment">📅 بموعد</option></select></div>
+<div class="field"><label>ملاحظات</label><textarea id="specNotes" rows="2"></textarea></div>
+<button class="btn-save" style="margin-top:10px" onclick="addSpecialist()">💾 إضافة</button>
+<h3 style="margin:16px 0 10px;font-size:13px">📋 الأخصائيون المسجلون</h3>
+<div id="specialistsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-users">
+<div class="panel"><h2>👥 الفريق</h2><div class="desc">أعضاء العيادة</div>
+<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+<button class="chip-btn accent" onclick="openAddStaffModal()">➕ إضافة</button>
+<button class="chip-btn" onclick="loadUsers()">🔄</button>
+</div>
+<div id="usersList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-report">
+<div class="panel"><h2>📄 التقرير الشامل والجزئي</h2><div class="desc">اختر الأقسام التي تريد تضمينها في التقرير</div>
+<div class="grid2" style="margin-bottom:14px">
+<div class="field"><label>المريض *</label><select id="reportPatient"><option value="">— اختر —</option></select></div>
+<div class="field"><label>نوع التقرير</label>
+<select id="reportType" onchange="toggleReportSections()">
+<option value="comprehensive">📋 شامل (كل شيء)</option>
+<option value="partial">📄 جزئي (اختر الأقسام)</option>
+<option value="comparison">⚖️ مقارنة قبل/بعد</option>
+</select></div>
+</div>
+<div id="reportSectionsPicker" class="hidden" style="background:rgba(0,0,0,.2);padding:14px;border-radius:12px;margin-bottom:14px">
+<h3 style="font-size:13px;color:var(--gold);margin-bottom:10px">✓ اختر الأقسام</h3>
+<div class="grid2">
+<label class="report-section"><input type="checkbox" class="rpt-section" value="basic" checked><span>👤 البيانات الأساسية</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="history" checked><span>💊 التاريخ الطبي</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="photos" checked><span>📸 صور المريض</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="face" checked><span>🧑‍⚕️ تحليل الوجه</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="diagnosis" checked><span>🧠 التشخيص</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="treatment" checked><span>📋 خطة العلاج</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="chart" checked><span>📊 مخطط الأسنان</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="appointments" checked><span>🗓️ المواعيد</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="smile" checked><span>😁 تصميم الابتسامة</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="beforeafter" checked><span>⚖️ قبل/بعد</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="lab" checked><span>🧪 طلبات المعمل</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="billing" checked><span>💳 الحسابات</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section" value="notes"><span>📝 ملاحظات إضافية</span></label>
+</div>
+</div>
+<div id="reportSectionsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:14px">
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="basic" checked><span>👤 أساسية</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="history" checked><span>💊 تاريخ طبي</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="photos" checked><span>📸 صور</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="face" checked><span>🧑‍⚕️ تحليل وجه</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="diagnosis" checked><span>🧠 تشخيص</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="treatment" checked><span>📋 علاج</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="chart" checked><span>📊 أسنان</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="beforeafter" checked><span>⚖️ قبل/بعد</span></label>
+<label class="report-section"><input type="checkbox" class="rpt-section-comp" value="billing" checked><span>💳 حسابات</span></label>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+<button class="btn-save" onclick="generateFullReport()">🔄 توليد التقرير</button>
+<button class="chip-btn" onclick="downloadReportPDF()">📄 تحميل PDF</button>
+<button class="chip-btn" onclick="printReport()">🖨️ طباعة</button>
+</div>
+<div id="reportPreview" style="background:var(--card2);padding:18px;border-radius:12px;min-height:180px"></div>
+</div>
+</section>
+
+<section class="section" id="sec-manageProducts">
+<div class="panel"><h2>📚 إدارة المنتجات</h2><div class="desc">(للمالك فقط)</div>
+<div style="background:rgba(20,184,166,.05);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+<h3 style="font-size:13px;color:var(--teal);margin-bottom:10px">➕ إضافة منتج جديد</h3>
+<div class="grid2">
+<div class="field"><label>العنوان *</label><input id="dpTitle"></div>
+<div class="field"><label>النوع *</label><select id="dpType"><option value="book">📚 كتاب</option><option value="system">⚙️ نظام</option><option value="editor">🎨 أداة تحرير</option><option value="ai">🧠 أداة AI</option><option value="course">🎓 دورة</option></select></div>
+<div class="field"><label>السعر ($) *</label><input id="dpPrice" type="number" value="0" min="0" step="0.01"></div>
+<div class="field"><label>مجاني؟</label><select id="dpFree"><option value="no">مدفوع</option><option value="yes">مجاني</option></select></div>
+</div>
+<div class="field"><label>الوصف</label><textarea id="dpDesc" rows="2"></textarea></div>
+<div class="field"><label>رابط صورة الغلاف</label><input id="dpCover" placeholder="https://..."></div>
+<div class="field"><label>رابط الملف (Google Drive مباشر)</label><input id="dpFile" placeholder="https://drive.google.com/uc?export=download&id=..."></div>
+<div class="grid2">
+<div class="field"><label>واتساب</label><input id="dpWhatsApp" type="tel"></div>
+<div class="field"><label>البريد</label><input id="dpEmail" type="email"></div>
+</div>
+<button class="btn-save" onclick="addDigitalProduct()">💾 إضافة المنتج</button>
+</div>
+<h3 style="font-size:13px;margin:14px 0 8px">📋 المنتجات</h3>
+<div id="adminProductsList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-manageSubscriptions">
+<div class="panel"><h2>🎯 إدارة الاشتراكات</h2><div class="desc">(للمالك فقط)</div>
+<div style="background:rgba(245,199,106,.05);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+<h3 style="font-size:13px;color:var(--gold);margin-bottom:10px">➕ خطة جديدة</h3>
+<div class="grid2">
+<div class="field"><label>اسم الخطة *</label><input id="spName"></div>
+<div class="field"><label>السعر ($) *</label><input id="spPrice" type="number" value="99" min="0"></div>
+<div class="field"><label>المدة (أيام) *</label><input id="spDuration" type="number" value="30" min="1"></div>
+<div class="field"><label>الترتيب</label><input id="spOrder" type="number" value="1" min="1"></div>
+</div>
+<div class="field"><label>الوصف</label><textarea id="spDesc" rows="2"></textarea></div>
+<div class="field">
+<label>الأقسام المتاحة</label>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;background:rgba(0,0,0,.2);padding:10px;border-radius:10px">
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="patients" checked> المرضى</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="history" checked> التاريخ</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="chart" checked> الأسنان</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="appointments" checked> المواعيد</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="aiDiagnosis"> تشخيص AI</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="aiTreatment"> خطة علاج</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="smileDesign"> ابتسامة</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="cadcam"> CAD/CAM</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="lab"> المعمل</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="specialists"> أخصائيون</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="meetings"> اجتماعات</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="dentbook"> Dentbook</label>
+<label class="spec-check-item"><input type="checkbox" class="sp-section" value="billing"> الحسابات</label>
+</div>
+</div>
+<button class="btn-save" onclick="addSubscriptionPlan()">💾 إضافة</button>
+</div>
+<h3 style="font-size:13px;margin:14px 0 8px">📋 الخطط</h3>
+<div id="adminPlansList"></div>
+<h3 style="font-size:13px;margin:16px 0 8px">👥 المشتركون</h3>
+<div id="allSubscriptionsList"></div>
+<h3 style="font-size:13px;margin:16px 0 8px;color:var(--gold)">⏳ طلبات الدفع المعلقة</h3>
+<div id="pendingOrdersList"></div>
+</div>
+</section>
+
+<section class="section" id="sec-manageAds">
+<div class="panel"><h2>📢 إدارة الإعلانات</h2><div class="desc">(للمالك فقط)</div>
+<div style="background:rgba(34,211,238,.05);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px">
+<h3 style="font-size:13px;color:var(--cyan);margin-bottom:10px">➕ إعلان جديد</h3>
+<div class="field"><label>العنوان *</label><input id="adTitle"></div>
+<div class="field"><label>الوصف</label><textarea id="adDesc" rows="2"></textarea></div>
+<div class="grid2">
+<div class="field"><label>رابط الصورة</label><input id="adImage"></div>
+<div class="field"><label>رابط الوجهة</label><input id="adLink"></div>
+<div class="field"><label>البداية *</label><input id="adStart" type="date"></div>
+<div class="field"><label>النهاية *</label><input id="adEnd" type="date"></div>
+</div>
+<div class="field"><label>الجمهور</label>
+<select id="adAudience">
+<option value="all">الجميع</option>
+<option value="doctors">الأطباء</option>
+<option value="employees">الموظفون</option>
+<option value="guests">الزوار</option>
+<option value="subscribers">المشتركون</option>
+</select>
+</div>
+<button class="btn-save" onclick="addAdvertisement()">💾 إنشاء</button>
+</div>
+<h3 style="font-size:13px;margin:14px 0 8px">📋 الإعلانات</h3>
+<div id="adminAdsList"></div>
+<h3 style="font-size:13px;margin:16px 0 8px">⚙️ إعدادات الدفع</h3>
+<div style="background:rgba(52,211,153,.05);border:1px solid var(--border);border-radius:12px;padding:14px">
+<div class="grid2">
+<div class="field"><label>🪙 Binance ID</label><input id="payBinanceId" placeholder="360202769"></div>
+<div class="field"><label>📱 محفظة يمنية</label><input id="payWalletNumber" placeholder="777700412" type="tel"></div>
+<div class="field"><label>🏦 اسم البنك</label><input id="payBankName"></div>
+<div class="field"><label>🔢 رقم الحساب</label><input id="payBankAccount"></div>
+<div class="field"><label>👤 صاحب الحساب</label><input id="payAccountHolder"></div>
+<div class="field"><label>📧 البريد</label><input id="payEmail" type="email"></div>
+</div>
+<div class="field"><label>💬 واتساب</label><input id="payWhatsApp" placeholder="777700412" type="tel"></div>
+<div class="field"><label>📝 تعليمات</label><textarea id="payInstructions" rows="2"></textarea></div>
+<button class="btn-save" onclick="savePaymentConfig()">💾 حفظ</button>
+</div>
+</div>
+</section>
+
+<section class="section" id="sec-settings">
+<div class="panel">
+<h2>⚙️ الإعدادات</h2><div class="desc">الحساب والخصوصية</div>
+<div class="grid2">
+<div class="field"><label>البريد</label><input id="setEmail" readonly></div>
+<div class="field"><label>الاسم</label><input id="setName"></div>
+<div class="field"><label>الدور</label><input id="setRole" readonly></div>
+<div class="field"><label>كود العيادة</label><input id="setClinicCode" readonly style="font-family:monospace"></div>
+</div>
+<h3 style="font-size:13px;margin:14px 0 8px">🔐 الخصوصية</h3>
+<div style="display:flex;flex-direction:column;gap:6px">
+<label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="privShowEmail" style="width:16px"> عرض بريدي</label>
+<label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="privShowPhone" style="width:16px"> عرض هاتفي</label>
+<label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="privAllowFriends" style="width:16px"> السماح بالصداقة</label>
+</div>
+<button class="btn-save" style="margin-top:12px" onclick="saveProfile()">💾 حفظ</button>
+</div>
+<div class="panel">
+<h2>🤖 Gemini AI</h2>
+<div class="desc">مفتاح من <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--teal)">AI Studio</a></div>
+<div class="field"><label>🔑 مفتاح</label><input type="password" id="geminiKey" placeholder="AIzaSy..." dir="ltr" style="font-family:monospace"></div>
+<div class="field"><label>🤖 الموديل (يدعم الرؤية)</label>
+<select id="geminiModel">
+<option value="gemini-2.5-flash">gemini-2.5-flash (يدعم الصور)</option>
+<option value="gemini-2.0-flash">gemini-2.0-flash (يدعم الصور)</option>
+<option value="gemini-1.5-flash">gemini-1.5-flash (يدعم الصور)</option>
+<option value="gemini-flash-latest">gemini-flash-latest</option>
+</select></div>
+<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+<button class="btn-save" onclick="saveGeminiSettings()">💾 حفظ</button>
+<button class="chip-btn" onclick="testGemini()">🔌 اختبار</button>
+</div>
+<div id="geminiTestOut" style="margin-top:8px;font-size:11px"></div>
+</div>
+</section>
+
+<footer class="app-footer">© 2026 Dentofacial HarmonizeAI | v12.0</footer>
+</main>
+</div>
+
+<div class="modal" id="addPatientModal">
+<div class="box">
+<h3 style="margin-bottom:12px">➕ مريض جديد</h3>
+<div class="field"><label>الاسم *</label><input id="pName"></div>
+<div class="field"><label>الهاتف *</label><input id="pPhone" type="tel"></div>
+<div class="field"><label>العمر</label><input id="pAge" type="number"></div>
+<div class="field"><label>الجنس</label><select id="pGender"><option value="">—</option><option>ذكر</option><option>أنثى</option></select></div>
+<div class="field"><label>ملاحظات</label><textarea id="pNotes" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;margin-top:12px">
+<button class="btn-save" onclick="createPatient()" style="flex:1">💾</button>
+<button class="chip-btn" onclick="document.getElementById('addPatientModal').classList.remove('show')">إلغاء</button>
+</div>
+</div>
+</div>
+
+<div class="modal" id="selectPatientModal">
+<div class="box">
+<h3 style="margin-bottom:12px">👤 اختر المريض</h3>
+<div id="selectPatientList"></div>
+</div>
+</div>
+
+<div class="modal" id="addFriendModal">
+<div class="box">
+<h3 style="margin-bottom:12px">👫 إضافة صديق</h3>
+<div class="field"><label>ابحث</label><input id="friendSearch" placeholder="بريد أو اسم..." oninput="searchUsers()"></div>
+<div id="searchResults" style="max-height:300px;overflow-y:auto;margin-top:10px"></div>
+<button class="chip-btn" onclick="document.getElementById('addFriendModal').classList.remove('show')" style="margin-top:12px;width:100%">إغلاق</button>
+</div>
+</div>
+
+<div class="modal" id="addStaffModal">
+<div class="box">
+<h3 style="margin-bottom:12px">➕ عضو للفريق</h3>
+<div class="field"><label>الاسم *</label><input id="staffName"></div>
+<div class="field"><label>البريد *</label><input id="staffEmail" type="email"></div>
+<div class="field"><label>كلمة المرور *</label><input id="staffPassword" type="password"></div>
+<div class="field"><label>الدور</label><select id="staffRole"><option value="doctor">طبيب</option><option value="employee">موظف</option></select></div>
+<div class="field"><label>التخصص</label><select id="staffSpecialty"><option value="">—</option><option>تقويم</option><option>جراحة</option><option>لبية</option><option>أطفال</option></select></div>
+<div style="display:flex;gap:8px;margin-top:12px">
+<button class="btn-save" onclick="createStaffAccount()" style="flex:1">💾</button>
+<button class="chip-btn" onclick="document.getElementById('addStaffModal').classList.remove('show')">إلغاء</button>
+</div>
+<p id="staffErr" class="hidden" style="margin-top:8px;color:var(--danger);font-size:11px"></p>
+</div>
+</div>
+
+<div class="modal" id="paymentModal">
+<div class="box" style="max-width:500px">
+<h3 style="margin-bottom:12px;text-align:center">💳 إتمام الدفع</h3>
+<div id="payModalContent"></div>
+</div>
+</div>
+
+<div class="modal" id="proofModal">
+<div class="box">
+<h3 style="margin-bottom:12px;text-align:center">📤 إثبات الدفع</h3>
+<div id="proofModalContent"></div>
+</div>
+</div>
+
+<button class="chat-fab" onclick="toggleChat()">💬</button>
+<div id="chatPanel">
+<div class="chat-head"><span>🤖 مساعد Gemini</span><button onclick="toggleChat()">✕</button></div>
+<div class="chat-body" id="chatBody"></div>
+<div class="chat-input">
+<input id="chatInput" placeholder="اسألني..." onkeydown="if(event.key==='Enter')sendChat()">
+<button onclick="sendChat()" id="chatSend">إرسال</button>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// إعدادات الأنظمة
-// ═══════════════════════════════════════════════════════════════
-const SYSTEMS = {
-  clinic: { file: 'Clinical.html', name: 'العيادة' },
-  lab: { file: 'Lab.html', name: 'المعمل' },
-  analyzer: { file: 'Analyzer.html', name: 'التحليل التلقائي' }
-};
+const firebaseConfig = {apiKey: "AIzaSyBe5PoeoH0pJ9hC0vTjVPELNZPpmKqCjCU",authDomain: "naqclinixai-dental-clinic.firebaseapp.com",projectId: "naqclinixai-dental-clinic",storageBucket: "naqclinixai-dental-clinic.firebasestorage.app",messagingSenderId: "796796158387",appId: "1:796796158387:web:613eac60fa6bc18e60cbc6"};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const CATBOX_API_URL = "https://catbox.moe/user/api.php";
 
-let currentTab = 'clinic';
-let currentUser = null;
-let iframeLoadTimeout = null;
+let CU = null, CD = null;
+let patients = [], appointments = [], users = [], lab = [];
+let posts = [], discussions = [], specialists = [], dentChatMsgs = [], meetings = [];
+let digitalProducts = [], myOrders = [], subscriptionPlans = [];
+let userSubscription = null, allSubscriptions = [], advertisements = [];
+let billingRecords = [], notifications = [];
+let geminiKey = '', geminiModel = 'gemini-2.5-flash';
+let chatLoaded = false, chartInst = null, currentPatient = null, currentPatientSection = null;
+let patientPhotos = [];
+let exoParams = { smile_width: 1.0, smile_curve: 0.5, tooth_size: 1.0, tooth_whiteness: 0.8 };
+let exoImg = null, exoOriginal = null, exoDesigned = null;
+let toothState = {}, threeInit = false;
+let postMedia = { image: null };
+let regRole = 'doctor';
+let paymentConfig = {binanceId: '360202769', walletNumber: '777700412',bankName: '', bankAccount: '', accountHolder: 'د. علي النقيب',email: '', whatsApp: '777700412',instructions: 'بعد التحويل، أرسل صورة الإيصال عبر واتساب.'};
+let currentPayment = null;
+let aiImagesBase64 = [];
+let faceMesh = null, faceImage = null, faceLandmarks = null, faceOriginalSrc = null;
+let lastDiagnosis = '', lastTreatmentMain = '', lastTreatmentAlt = '';
 
-// ═══════════════════════════════════════════════════════════════
-// التبديل بين الأنظمة
-// ═══════════════════════════════════════════════════════════════
-function switchTab(systemKey) {
-  if (!SYSTEMS[systemKey]) {
-    console.error('نظام غير معروف:', systemKey);
-    return;
-  }
+function toast(m, err) {const t = document.getElementById('toast');if (!t) return;t.textContent = m;t.classList.toggle('error', !!err);t.classList.add('show');clearTimeout(t._t);t._t = setTimeout(() => t.classList.remove('show'), 3500);}
+function esc(s) {return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function today() { return new Date().toISOString().slice(0, 10); }
+function isAdmin() { return CD && (CD.role === 'admin' || CD.role === 'doctor'); }
 
-  // تحديث التبويبات النشطة
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.tab === systemKey);
-  });
+function switchAuth(tab) {document.getElementById('tabLogin').classList.toggle('active', tab === 'login');document.getElementById('tabReg').classList.toggle('active', tab === 'register');document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');}
+function selectRegRole(role) {regRole = role;['doctor','employee','guest'].forEach(r => {const btn = document.getElementById('role' + r.charAt(0).toUpperCase() + r.slice(1) + 'Btn');if (btn) btn.classList.toggle('active', r === role);});document.getElementById('doctorFields').classList.toggle('hidden', role !== 'doctor');document.getElementById('employeeFields').classList.toggle('hidden', role !== 'employee');document.getElementById('guestFields').classList.toggle('hidden', role !== 'guest');}
 
-  // عرض شاشة التحميل
-  const frame = document.getElementById('mainFrame');
-  const overlay = document.getElementById('loadingOverlay');
-  const text = document.getElementById('loadingText');
-  const errorBanner = document.getElementById('errorBanner');
-
-  overlay.classList.add('show');
-  errorBanner.classList.remove('show');
-  text.textContent = 'جاري تحميل ' + SYSTEMS[systemKey].name + '...';
-
-  // بناء الرابط
-  const url = SYSTEMS[systemKey].file;
-  frame.src = url;
-  currentTab = systemKey;
-  localStorage.setItem('currentTab', systemKey);
-
-  // إخفاء شاشة التحميل عند التحميل
-  clearTimeout(iframeLoadTimeout);
-  iframeLoadTimeout = setTimeout(() => {
-    overlay.classList.remove('show');
-  }, 3000);
-
-  frame.onload = () => {
-    clearTimeout(iframeLoadTimeout);
-    setTimeout(() => overlay.classList.remove('show'), 200);
-  };
-
-  frame.onerror = () => {
-    clearTimeout(iframeLoadTimeout);
-    overlay.classList.remove('show');
-    showError('فشل تحميل ' + SYSTEMS[systemKey].name);
-  };
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const err = document.getElementById('loginErr'); err.classList.add('hidden');
+  if (!email || !password) { err.textContent = '⚠️ أدخل البيانات'; err.classList.remove('hidden'); return; }
+  const btn = document.getElementById('btnLogin'); btn.disabled = true; btn.textContent = '⏳...';
+  try { await auth.signInWithEmailAndPassword(email, password); toast('✅'); } 
+  catch (e) { let msg = e.message; if (e.code === 'auth/user-not-found') msg = 'البريد غير مسجل'; else if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'كلمة المرور خطأ'; err.textContent = '❌ ' + msg; err.classList.remove('hidden'); } 
+  finally { btn.disabled = false; btn.textContent = '🚪 دخول'; }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// عرض رسالة خطأ
-// ═══════════════════════════════════════════════════════════════
-function showError(msg) {
-  const banner = document.getElementById('errorBanner');
-  banner.textContent = '❌ ' + msg;
-  banner.classList.add('show');
-  setTimeout(() => banner.classList.remove('show'), 4000);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// تحميل بيانات المستخدم
-// ═══════════════════════════════════════════════════════════════
-function loadUser() {
-  try {
-    const saved = localStorage.getItem('currentUser');
-    if (saved) {
-      const newUser = JSON.parse(saved);
-      const changed = !currentUser || currentUser.username !== newUser.username;
-      currentUser = newUser;
-
-      document.getElementById('userInfo').style.display = 'flex';
-      document.getElementById('logoutBtn').style.display = 'block';
-      document.getElementById('userName').textContent = currentUser.fullName || currentUser.username;
-      document.getElementById('userRole').textContent =
-        currentUser.role === 'admin' ? '👑 مدير' :
-        currentUser.role === 'doctor' ? '👨‍⚕️ طبيب' : '👨‍💼 موظف';
-      document.getElementById('userAvatar').textContent = (currentUser.fullName || 'U').charAt(0);
-
-      // إذا تغير المستخدم، أعد تحميل التبويب الحالي
-      if (changed && currentTab !== 'clinic') {
-        switchTab(currentTab);
-      }
-    } else {
-      currentUser = null;
-      document.getElementById('userInfo').style.display = 'none';
-      document.getElementById('logoutBtn').style.display = 'none';
-    }
-  } catch (e) {
-    console.error('loadUser error:', e);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// تسجيل الخروج
-// ═══════════════════════════════════════════════════════════════
-function logout() {
-  if (!confirm('تسجيل الخروج من جميع الأنظمة؟')) return;
-  localStorage.removeItem('currentUser');
-  localStorage.removeItem('currentTab');
-  currentUser = null;
-  document.getElementById('userInfo').style.display = 'none';
-  document.getElementById('logoutBtn').style.display = 'none';
-  // إعادة تحميل العيادة (ستعيد توجيهها لصفحة الدخول)
-  switchTab('clinic');
-}
-
-// ═══════════════════════════════════════════════════════════════
-// الاستماع لتغييرات localStorage (تسجيل الدخول من داخل iframe)
-// ═══════════════════════════════════════════════════════════════
-window.addEventListener('storage', (e) => {
-  if (e.key === 'currentUser') {
-    loadUser();
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// استقبال رسائل من iframe (للتبديل بين الأنظمة)
-// ═══════════════════════════════════════════════════════════════
-window.addEventListener('message', (event) => {
-  if (!event.data || typeof event.data !== 'object') return;
-
-  // طلب التبديل إلى نظام
-  if (event.data.type === 'switchTab' && SYSTEMS[event.data.tab]) {
-    switchTab(event.data.tab);
-  }
-
-  // تسجيل دخول/خروج
-  if (event.data.type === 'login' || event.data.type === 'logout') {
-    loadUser();
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// بدء التشغيل
-// ═══════════════════════════════════════════════════════════════
-function init() {
-  loadUser();
-
-  // استرجاع آخر تبويب
-  const savedTab = localStorage.getItem('currentTab');
-  if (savedTab && SYSTEMS[savedTab]) {
-    switchTab(savedTab);
+async function doRegister() {
+  const name = document.getElementById('regName').value.trim(), email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value, password2 = document.getElementById('regPassword2').value;
+  const privacy = document.getElementById('regPrivacy').checked, err = document.getElementById('regErr'); err.classList.add('hidden');
+  if (!name || !email || !password) { err.textContent = '⚠️ أكمل الحقول'; err.classList.remove('hidden'); return; }
+  if (password.length < 6) { err.textContent = '⚠️ 6 أحرف على الأقل'; err.classList.remove('hidden'); return; }
+  if (password !== password2) { err.textContent = '⚠️ كلمتا المرور مختلفتان'; err.classList.remove('hidden'); return; }
+  if (!privacy) { err.textContent = '⚠️ وافق على الخصوصية'; err.classList.remove('hidden'); return; }
+  let userData = { email, fullName: name, role: regRole, active: true, privacy: { showEmail: false, showPhone: false, allowFriends: true }, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  if (regRole === 'doctor') {
+    const cn = document.getElementById('regClinicName').value.trim();
+    if (!cn) { err.textContent = '⚠️ اسم العيادة'; err.classList.remove('hidden'); return; }
+    userData.clinicId = 'CLN-' + Math.random().toString(36).substring(2, 8).toUpperCase(); userData.clinicName = cn;
+    userData.clinicAddress = document.getElementById('regClinicAddress').value.trim(); userData.specialty = document.getElementById('regSpecialty').value; userData.clinicPhone = document.getElementById('regClinicPhone').value.trim();
+  } else if (regRole === 'employee') {
+    const code = document.getElementById('regClinicCode').value.trim().toUpperCase();
+    if (!code) { err.textContent = '⚠️ كود العيادة'; err.classList.remove('hidden'); return; }
+    const chk = await db.collection('users').where('clinicId', '==', code).limit(1).get();
+    if (chk.empty) { err.textContent = '❌ كود غير صحيح'; err.classList.remove('hidden'); return; }
+    userData.clinicId = code; userData.position = document.getElementById('regPosition').value;
   } else {
-    switchTab('clinic');
+    userData.interest = document.getElementById('regInterest').value.trim(); userData.country = document.getElementById('regCountry').value.trim(); userData.clinicId = 'GUEST-' + Math.random().toString(36).substring(2, 8).toUpperCase();
   }
-
-  // فحص دوري للمستخدم
-  setInterval(loadUser, 2000);
+  const btn = document.getElementById('btnReg'); btn.disabled = true; btn.textContent = '⏳...';
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    const isFirst = (await db.collection('users').get()).size === 0;
+    if (isFirst) userData.role = 'admin';
+    await db.collection('users').doc(cred.user.uid).set(userData);
+    await cred.user.updateProfile({ displayName: name });
+    toast('✅'); if (regRole === 'doctor') setTimeout(() => alert(`🏥 كود عيادتك: ${userData.clinicId}\n\n⚠️ احفظه!`), 800);
+  } catch (e) { let msg = e.message; if (e.code === 'auth/email-already-in-use') msg = 'البريد مسجل'; else if (e.code === 'auth/weak-password') msg = 'كلمة المرور ضعيفة'; err.textContent = '❌ ' + msg; err.classList.remove('hidden'); } 
+  finally { btn.disabled = false; btn.textContent = '➕ إنشاء'; }
 }
 
-// بدء عند تحميل الصفحة
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
+async function loginAnonymous() {
+  const err = document.getElementById('socialErr'); err.classList.add('hidden');
+  try {
+    const r = await auth.signInAnonymously(); const u = r.user; const g = 'زائر-' + u.uid.slice(0, 6).toUpperCase();
+    const isFirst = (await db.collection('users').get()).size === 0;
+    await db.collection('users').doc(u.uid).set({ email: u.uid + '@guest.local', fullName: g, role: isFirst ? 'admin' : 'guest', active: true, isGuest: true, clinicId: 'GUEST-' + u.uid.slice(0, 6).toUpperCase(), privacy: { showEmail: false, showPhone: false, allowFriends: true }, createdAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await u.updateProfile({ displayName: g }); toast('✅ مرحباً ' + g);
+  } catch (e) { if (e.code === 'auth/operation-not-allowed') { err.textContent = '⚠️ فعّل Anonymous في Firebase'; err.classList.remove('hidden'); } else { err.textContent = '❌ ' + e.message; err.classList.remove('hidden'); } }
 }
 
-console.log('✅ NAQClinixAI — النظام الموحد جاهز');
-console.log('📁 الأنظمة المتاحة:', Object.keys(SYSTEMS).map(k => SYSTEMS[k].name).join(' | '));
+async function socialLogin(provider) {
+  const err = document.getElementById('socialErr'); err.classList.add('hidden'); let p;
+  if (provider === 'google') p = new firebase.auth.GoogleAuthProvider(); else if (provider === 'facebook') p = new firebase.auth.FacebookAuthProvider(); else if (provider === 'twitter') p = new firebase.auth.TwitterAuthProvider(); else if (provider === 'github') p = new firebase.auth.GithubAuthProvider(); else return;
+  try {
+    const r = await auth.signInWithPopup(p); const u = r.user; const email = u.email || (u.uid + '@' + provider + '.social');
+    const doc = await db.collection('users').doc(u.uid).get();
+    if (!doc.exists) {
+      const isFirst = (await db.collection('users').get()).size === 0;
+      await db.collection('users').doc(u.uid).set({ email, fullName: u.displayName || email.split('@')[0], avatar: u.photoURL || '', role: isFirst ? 'admin' : 'guest', active: true, provider, clinicId: 'GUEST-' + u.uid.slice(0, 6).toUpperCase(), privacy: { showEmail: false, showPhone: false, allowFriends: true }, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+    toast('✅');
+  } catch (e) { let msg = e.message; if (e.code === 'auth/operation-not-allowed') msg = '⚠️ ' + provider + ' غير مفعّل'; else if (e.code === 'auth/popup-closed-by-user') msg = '⚠️ تم الإغلاق'; err.textContent = msg.startsWith('⚠️') ? msg : '❌ ' + msg; err.classList.remove('hidden'); }
+}
+
+function resetPassword() { const e = prompt('بريدك:'); if (e) auth.sendPasswordResetEmail(e).then(() => toast('📧 تحقق من بريدك')).catch(err => toast('❌ ' + err.message, true)); }
+function doLogout() { if (confirm('تسجيل الخروج؟')) auth.signOut(); }
+
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    CU = user;
+    try {
+      const doc = await db.collection('users').doc(user.uid).get();
+      if (doc.exists) CD = doc.data();
+      else {
+        const isFirst = (await db.collection('users').get()).size === 0;
+        CD = { email: user.email || user.uid, fullName: user.displayName || user.email || 'مستخدم', role: isFirst ? 'admin' : 'guest', active: true, clinicId: 'GUEST-' + user.uid.slice(0, 6).toUpperCase(), createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+        await db.collection('users').doc(user.uid).set(CD);
+      }
+      if (CD.active === false) { await auth.signOut(); toast('🚫 الحساب معطل', true); return; }
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('userName').textContent = CD.fullName;
+      document.getElementById('brandSub').textContent = (CD.role === 'admin' ? '👑' : CD.role === 'doctor' ? '👨‍⚕️' : CD.role === 'employee' ? '👨‍💼' : '👤') + ' — ' + (user.email || 'ضيف');
+      const ci = document.getElementById('clinicInfo'); if (ci) ci.innerHTML = CD.clinicName ? `🏥 ${esc(CD.clinicName)} • كود: <b>${esc(CD.clinicId || '')}</b>` : 'الحساب: ' + (CD.role || '');
+      document.querySelectorAll('[data-admin="true"]').forEach(el => { el.style.display = isAdmin() ? 'flex' : 'none'; });
+      loadGeminiSettings();
+      await Promise.all([ loadPatients(), loadAppointments(), loadUsers(), loadLab(), loadPosts(), loadDiscussions(), loadSpecialists(), loadMeetings(), loadDentChat(), loadDigitalProducts(), loadMyOrders(), loadSubscriptionPlans(), loadUserSubscription(), loadAdvertisements(), loadPaymentConfig(), loadBilling(), loadNotifications() ]);
+      if (isAdmin()) { await loadAllSubscriptions(); await loadPendingOrders(); }
+      updateDashboard(); fillSettings(); setTimeout(() => { drawExoDiagram(); initThree(); }, 300); toast('✅ مرحباً ' + CD.fullName);
+    } catch (e) { console.error(e); toast('❌ ' + e.message, true); }
+  } else { CU = null; CD = null; document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('app').classList.add('hidden'); }
+});
+
+function showSection(sec) {
+  if (!hasAccessToSection(sec)) { toast('🔒 هذا القسم يتطلب اشتراكًا', true); return; }
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('sec-' + sec); if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.nav-item[data-sec="${sec}"]`); if (btn) btn.classList.add('active');
+  document.getElementById('sidebar').classList.remove('open');
+  const pSecs = ['history','chart','report','patientPhotos'];
+  if (pSecs.includes(sec) && !currentPatient && sec !== 'report') { openSelectPatientFor(sec); return; }
+  if (sec === 'patients') renderPatients();
+  if (sec === 'patientPhotos') loadPatientPhotos();
+  if (sec === 'appointments') renderAppointments();
+  if (sec === 'users') renderUsers();
+  if (sec === 'lab') renderLab();
+  if (sec === 'dentbook') renderPosts();
+  if (sec === 'dentchat') renderDentChat();
+  if (sec === 'discussions') { renderDiscussions(); renderDiscInvitesCheckboxes(); }
+  if (sec === 'specialists') renderSpecialists();
+  if (sec === 'meetings') { renderMeetings(); renderSpecialistsCheckboxes(); }
+  if (sec === 'friends') loadFriends();
+  if (sec === 'store') renderStore();
+  if (sec === 'myOrders') loadMyOrders();
+  if (sec === 'subscriptions') loadSubscriptionPlans();
+  if (sec === 'mySubscription') loadUserSubscription();
+  if (sec === 'smileDesign') drawExoDiagram();
+  if (sec === 'cadcam') initThree();
+  if (sec === 'report') populateReportPatientSelect();
+  if (sec === 'manageProducts' && isAdmin()) loadDigitalProducts();
+  if (sec === 'manageSubscriptions' && isAdmin()) { loadSubscriptionPlans(); loadAllSubscriptions(); loadPendingOrders(); }
+  if (sec === 'manageAds' && isAdmin()) { loadAdvertisements(); loadPaymentConfig(); }
+  if (sec === 'billing') renderBilling();
+  if (sec === 'notifications') renderNotifications();
+  if (['history','chart'].includes(sec)) loadPatientSection(sec);
+}
+document.querySelectorAll('.nav-item[data-sec]').forEach(btn => { btn.addEventListener('click', () => showSection(btn.dataset.sec)); });
+
+function openSelectPatientFor(sec) {
+  currentPatientSection = sec;
+  const m = document.getElementById('selectPatientModal'); const l = document.getElementById('selectPatientList');
+  if (!patients.length) l.innerHTML = '<div class="empty">لا يوجد مرضى</div>';
+  else l.innerHTML = patients.map(p => `<div class="appt-card" style="cursor:pointer" onclick="selectPatientFor('${p.id}','${sec}')"><div class="info"><strong>${esc(p.fullName)}</strong><small>${esc(p.phone || '')}</small></div></div>`).join('');
+  m.classList.add('show');
+}
+function selectPatientFor(id, sec) { currentPatient = patients.find(p => p.id === id); document.getElementById('selectPatientModal').classList.remove('show'); showSection(sec); }
+function hasAccessToSection(sectionId) {
+  if (isAdmin()) return true;
+  const free = ['dashboard','store','myOrders','subscriptions','mySubscription','settings','report','patients','patientPhotos','history','chart','appointments','users','specialists','lab','dentbook','dentchat','friends','discussions','meetings','faceAnalysis','billing','notifications'];
+  if (free.includes(sectionId)) return true;
+  if (userSubscription && userSubscription.status === 'active') { const access = userSubscription.sectionsAccess || []; if (access.includes(sectionId)) return true; }
+  return false;
+}
+
+async function loadPatients() {
+  const snap = await db.collection('patients').get();
+  patients = [];
+  snap.forEach(d => {
+    const data = d.data();
+    if (!data.clinicId || data.clinicId === CD.clinicId) patients.push({ id: d.id, ...data });
+  });
+  patients.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  renderPatients(); populatePatientSelects(); updateDashboard();
+}
+function renderPatients() {
+  const q = (document.getElementById('searchPatients')?.value || '').toLowerCase();
+  const list = patients.filter(p => !q || (p.fullName || '').toLowerCase().includes(q) || (p.phone || '').includes(q));
+  const el = document.getElementById('patientsList'); if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="ic">📭</div><p>لا يوجد مرضى</p></div>'; return; }
+  el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">' +
+    list.map(p => `<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;gap:6px">
+        <div><div style="font-weight:700;font-size:12px">${esc(p.fullName)}</div><div style="font-size:9px;color:var(--muted)">${esc(p.fileNumber || p.id)}</div></div>
+        <span class="badge">${esc(p.gender || '—')}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        ${p.phone ? `<span>📱 ${esc(p.phone)}</span>` : ''}${p.age ? `<span>🎂 ${p.age}</span>` : ''}
+      </div>
+      <div style="display:flex;gap:3px">
+        <button class="chip-btn" style="padding:3px 6px;font-size:9px" onclick="selectPatientFor('${p.id}','history')">📂</button>
+        <button class="chip-btn" style="padding:3px 6px;font-size:9px" onclick="selectPatientFor('${p.id}','patientPhotos')">📸</button>
+        <button class="chip-btn" style="padding:3px 6px;font-size:9px;background:rgba(248,113,113,.15);color:var(--danger)" onclick="deletePatient('${p.id}')">🗑️</button>
+      </div>
+    </div>`).join('') + '</div>';
+}
+function openAddPatient() { document.getElementById('addPatientModal').classList.add('show'); }
+async function createPatient() {
+  const name = document.getElementById('pName').value.trim(); const phone = document.getElementById('pPhone').value.trim();
+  if (!name || !phone) { toast('⚠️ الاسم والهاتف', true); return; }
+  try {
+    const fn = 'DR-' + Date.now().toString().slice(-8);
+    await db.collection('patients').add({ fullName: name, phone, age: document.getElementById('pAge').value ? parseInt(document.getElementById('pAge').value) : null, gender: document.getElementById('pGender').value, notes: document.getElementById('pNotes').value.trim(), fileNumber: fn, clinicId: CD.clinicId, createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: CU.email || CU.uid });
+    document.getElementById('addPatientModal').classList.remove('show'); ['pName','pPhone','pAge','pGender','pNotes'].forEach(id => document.getElementById(id).value = '');
+    toast('✅ تمت الإضافة ' + fn);
+    await sendNotification(`تم إضافة مريض جديد: ${name} بواسطة ${CD.fullName}`);
+    await loadPatients();
+  } catch (e) { toast('❌ ' + e.message, true); }
+}
+async function deletePatient(id) { if (!confirm('حذف المريض؟')) return; await db.collection('patients').doc(id).delete(); toast('🗑️'); await loadPatients(); }
+function populatePatientSelects() {
+  const opts = '<option value="">— اختر —</option>' + patients.map(p => `<option value="${p.id}">${esc(p.fullName)}</option>`).join('');
+  ['apptPatient','aiPatient','aiPatient2','labPatient','meetPatient','discPatient','facePatient','billPatient','reportPatient'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = opts; });
+}
+
+async function loadPatientSection(sec) {
+  if (!currentPatient) return;
+  document.getElementById(sec + 'Ctx').textContent = 'للمريض: ' + currentPatient.fullName;
+  document.getElementById(sec + 'Form').classList.remove('hidden');
+  const doc = await db.collection('patients').doc(currentPatient.id).collection('medical').doc(sec).get();
+  const data = doc.exists ? doc.data() : {};
+  if (sec === 'history') {
+    document.getElementById('histChronic').value = data.chronic || ''; document.getElementById('histAllergy').value = data.allergy || ''; document.getElementById('histDrugs').value = data.drugs || ''; document.getElementById('histSmoke').value = data.smoke || ''; document.getElementById('histSurgery').value = data.surgery || ''; document.getElementById('histNotes').value = data.notes || '';
+  } else if (sec === 'chart') { toothState = data.teeth || {}; renderChart(); }
+}
+async function saveHistory() { await db.collection('patients').doc(currentPatient.id).collection('medical').doc('history').set({ chronic: document.getElementById('histChronic').value.trim(), allergy: document.getElementById('histAllergy').value.trim(), drugs: document.getElementById('histDrugs').value.trim(), smoke: document.getElementById('histSmoke').value, surgery: document.getElementById('histSurgery').value, notes: document.getElementById('histNotes').value.trim(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); toast('✅'); }
+
+// Billing & Notifications
+async function loadBilling() {
+  try {
+    const snap = await db.collection('billing').where('clinicId', '==', CD.clinicId).get();
+    billingRecords = []; snap.forEach(d => billingRecords.push({ id: d.id, ...d.data() }));
+    billingRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+    renderBilling(); calculateBillingSummary();
+  } catch (e) { console.error(e); }
+}
+async function saveBilling() {
+  const pid = document.getElementById('billPatient').value; const date = document.getElementById('billDate').value;
+  const totalCost = parseFloat(document.getElementById('billTotalCost').value) || 0; const paid = parseFloat(document.getElementById('billPaid').value) || 0;
+  const notes = document.getElementById('billNotes').value.trim();
+  if (!pid || !date) { toast('⚠️ اختر المريض والتاريخ', true); return; }
+  const p = patients.find(x => x.id === pid);
+  try {
+    await db.collection('billing').add({ patientId: pid, patientName: p?.fullName || '', date, totalCost, paid, remaining: totalCost - paid, notes, clinicId: CD.clinicId, createdBy: CU.email || CU.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    toast('✅ تم حفظ الحساب');
+    document.getElementById('billTotalCost').value = '0'; document.getElementById('billPaid').value = '0'; document.getElementById('billNotes').value = '';
+    await loadBilling();
+  } catch (e) { toast('❌ ' + e.message, true); }
+}
+function calculateBillingSummary() {
+  const todayStr = new Date().toISOString().slice(0, 10); const monthStr = todayStr.slice(0, 7); const yearStr = todayStr.slice(0, 4);
+  let daily = 0, monthly = 0, yearly = 0, totalRemaining = 0;
+  billingRecords.forEach(b => { if (b.date === todayStr) daily += b.paid; if (b.date.startsWith(monthStr)) monthly += b.paid; if (b.date.startsWith(yearStr)) yearly += b.paid; totalRemaining += b.remaining; });
+  document.getElementById('billingToday').textContent = `$${daily.toFixed(2)}`; document.getElementById('billingMonth').textContent = `$${monthly.toFixed(2)}`; document.getElementById('billingYear').textContent = `$${yearly.toFixed(2)}`; document.getElementById('billingTotalRemaining').textContent = `$${totalRemaining.toFixed(2)}`;
+}
+function renderBilling() {
+  const el = document.getElementById('billingList'); if (!el) return;
+  if (!billingRecords.length) { el.innerHTML = '<div class="empty">لا توجد سجلات مالية</div>'; return; }
+  el.innerHTML = `<table class="tbl"><thead><tr><th>التاريخ</th><th>المريض</th><th>التكلفة</th><th>المدفوع</th><th>المتبقي</th><th>ملاحظات</th><th></th></tr></thead><tbody>` +
+    billingRecords.map(b => `<tr><td>${esc(b.date)}</td><td><b>${esc(b.patientName)}</b></td><td>$${(b.totalCost || 0).toFixed(2)}</td><td style="color:var(--ok)">$${(b.paid || 0).toFixed(2)}</td><td style="color:var(--danger)">$${(b.remaining || 0).toFixed(2)}</td><td style="font-size:10px;color:var(--muted)">${esc(b.notes || '')}</td><td><button class="chip-btn" style="padding:2px 6px;font-size:9px;background:rgba(248,113,113,.15);color:var(--danger)" onclick="deleteBilling('${b.id}')">🗑️</button></td></tr>`).join('') + '</tbody></table>';
+}
+async function deleteBilling(id) { if (!confirm('حذف السجل المالي؟')) return; await db.collection('billing').doc(id).delete(); toast('🗑️'); await loadBilling(); }
+
+async function sendNotification(text) { try { await db.collection('notifications').add({ text, clinicId: CD.clinicId, createdBy: CU.email || CU.uid, createdByName: CD.fullName, createdAt: firebase.firestore.FieldValue.serverTimestamp(), read: false }); await loadNotifications(); } catch (e) { console.error(e); } }
+async function loadNotifications() {
+  try {
+    const snap = await db.collection('notifications').where('clinicId', '==', CD.clinicId).get();
+    notifications = []; snap.forEach(d => notifications.push({ id: d.id, ...d.data() }));
+    notifications.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    renderNotifications();
+  } catch (e) { console.error(e); }
+}
+function renderNotifications() {
+  const el = document.getElementById('notificationsList'); const badge = document.getElementById('notifCount');
+  const unread = notifications.filter(n => !n.read).length;
+  if (badge) { badge.textContent = unread; badge.classList.toggle('hidden', unread === 0); }
+  if (!el) return; if (!notifications.length) { el.innerHTML = '<div class="empty">لا توجد إشعارات</div>'; return; }
+  el.innerHTML = notifications.map(n => `<div class="appt-card" style="border-right-color:${n.read ? 'var(--border)' : 'var(--teal)'};opacity:${n.read ? 0.6 : 1}"><div class="info"><strong>${esc(n.text)}</strong><small>${n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString('ar-EG') : ''}</small></div>${!n.read ? `<button class="chip-btn" style="padding:3px 8px;font-size:10px" onclick="markNotificationRead('${n.id}')">✓</button>` : ''}</div>`).join('');
+}
+async function markNotificationRead(id) { await db.collection('notifications').doc(id).update({ read: true }); await loadNotifications(); }
+async function markAllNotificationsRead() { const unread = notifications.filter(n => !n.read); for (let n of unread) { await db.collection('notifications').doc(n.id).update({ read: true }); } toast('✅ تم تحديد الكل كمقروء'); await loadNotifications(); }
+
+// ... سيتم إضافة باقي الدوال هنا
 </script>
-
 </body>
 </html>
